@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stampa DDT</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2rem;
+      }
+
+      h1 {
+        margin-bottom: 1rem;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 0.5rem 1rem;
+      }
+
+      dt {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Documento di Trasporto</h1>
+    <dl id="details"></dl>
+
+    <script>
+      const details = document.getElementById('details');
+      const last = localStorage.getItem('lastDDT');
+
+      if (!last) {
+        details.innerHTML = '<p>Nessun DDT disponibile.</p>';
+      } else {
+        const ddt = JSON.parse(last);
+        const entries = [
+          ['Numero', ddt.numero],
+          ['Data', ddt.data],
+          ['Cliente', ddt.cliente],
+          ['Articolo', ddt.articolo],
+          ['Quantità', ddt.quantita],
+          ['Creato il', new Date(ddt.createdAt).toLocaleString('it-IT')],
+        ];
+
+        entries.forEach(([label, value]) => {
+          const dt = document.createElement('dt');
+          dt.textContent = label;
+          const dd = document.createElement('dd');
+          dd.textContent = value;
+          details.append(dt, dd);
+        });
+
+        window.print();
+      }
+    </script>
+  </body>
+</html>
