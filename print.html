@@ -4,44 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stampa DDT</title>
-    <style>
-      @page { size: A4; margin: 10mm; }
-      body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
-      .sheet { width: 190mm; min-height: 277mm; margin: 0 auto; font-size: 12px; display: flex; flex-direction: column; }
-      .head { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; border: 1px solid #222; }
-      .brand { padding: 8px; border-right: 1px solid #222; }
-      .brand h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
-      .brand .doc-title { margin-top: 8px; font-size: 16px; font-weight: 700; }
-      .meta { display: grid; grid-template-rows: auto auto auto; }
-      .meta-box { border-bottom: 1px solid #222; padding: 6px; }
-      .meta-box:last-child { border-bottom: 0; }
-      .meta-label { font-weight: 700; font-size: 11px; }
-      .meta-value { margin-top: 4px; min-height: 18px; }
-      .main-box { border: 1px solid #222; border-top: 0; padding: 8px; }
-      .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .box-title { font-weight: 700; margin-bottom: 4px; }
-      .fixed-block { white-space: pre-line; line-height: 1.4; }
-      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      th, td { border: 1px solid #222; padding: 5px; height: 26px; }
-      th { font-size: 11px; text-align: left; }
-      td.qty { text-align: center; width: 60px; }
-      .causale { margin-top: 10px; border: 1px solid #222; padding: 6px; min-height: 44px; }
-      .final { margin-top: auto; border: 1px solid #222; padding: 8px; line-height: 1.6; }
-      .final .line { display: flex; gap: 10px; }
-      .sign { margin-top: 14px; display: flex; justify-content: space-between; }
-      .no-print { display: none; }
-      @media screen {
-        body { background: #e2e8f0; padding: 12px; }
-        .sheet { background: #fff; padding: 4mm; }
-      }
-    </style>
+    <link rel="stylesheet" href="print.css" />
   </head>
   <body>
     <div class="sheet">
       <div class="head">
-        <div class="brand">
-          <h1>ZIMMER</h1>
-          <div class="doc-title">Documento di Trasporto (DDT)</div>
+        <div class="head-main">
+          <div class="doc-title">DDT - Documento di Trasporto</div>
+          <div id="mittente" class="fixed-block"></div>
         </div>
         <div class="meta">
           <div class="meta-box">
@@ -52,24 +22,12 @@
             <div class="meta-label">Data</div>
             <div id="data" class="meta-value"></div>
           </div>
-          <div class="meta-box">
-            <div class="meta-label">Cliente / Destinatario</div>
-            <div id="cliente" class="meta-value"></div>
-          </div>
         </div>
       </div>
 
       <div class="main-box">
-        <div class="two-col">
-          <div>
-            <div class="box-title">MITTENTE</div>
-            <div id="mittente" class="fixed-block"></div>
-          </div>
-          <div>
-            <div class="box-title">DESTINATARIO</div>
-            <div id="destinatario" class="fixed-block"></div>
-          </div>
-        </div>
+        <div class="box-title">Cliente / Destinatario</div>
+        <div id="cliente" class="cliente-box fixed-block"></div>
 
         <div class="causale"><strong>CAUSALE DEL TRASPORTO:</strong> <span id="causale"></span></div>
 
@@ -91,7 +49,7 @@
 
         <div style="margin-top: 8px;"><strong>TRASPORTO A MEZZO:</strong></div>
         <div>□ MITTENTE &nbsp;&nbsp;&nbsp; □ VETTORE &nbsp;&nbsp;&nbsp; □ DESTINATARIO</div>
-        <div><strong>PORTO</strong> Franco</div>
+        <div>PORTO Franco</div>
 
         <div class="sign">
           <div>FIRMA MITTENTE ______________________</div>
@@ -120,8 +78,7 @@
 
         document.getElementById('numero').textContent = ddt.numero || '';
         document.getElementById('data').textContent = ddt.data || '';
-        document.getElementById('cliente').innerHTML = [cliente.riga1, cliente.riga2, cliente.riga3].filter(Boolean).join('<br/>');
-        document.getElementById('destinatario').textContent = [cliente.riga1, cliente.riga2, cliente.riga3].filter(Boolean).join('\n');
+        document.getElementById('cliente').textContent = [cliente.riga1, cliente.riga2, cliente.riga3].filter(Boolean).join('\n');
         document.getElementById('mittente').textContent = MITTENTE_FISSO;
         document.getElementById('causale').textContent = ddt.causale_trasporto || '';
         document.getElementById('iniziali').textContent = ddt.iniziali_paziente || '';
