@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ddt-cache-v3';
+const CACHE_NAME = 'ddt-cache-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './db.js',
   './styles.css',
   './print.html',
+  './print.css',
   './manifest.json'
 ];
 

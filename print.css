@@ -1,0 +1,27 @@
+@page { size: A4; margin: 10mm; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
+.sheet { width: 190mm; min-height: 277mm; margin: 0 auto; font-size: 12px; display: flex; flex-direction: column; }
+.head { display: grid; grid-template-columns: 1.4fr 1fr; align-items: stretch; border: 1px solid #222; }
+.head-main { padding: 8px; border-right: 1px solid #222; }
+.doc-title { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+.fixed-block { white-space: pre-line; line-height: 1.4; }
+.meta { display: grid; grid-template-rows: auto auto; }
+.meta-box { border-bottom: 1px solid #222; padding: 6px; }
+.meta-box:last-child { border-bottom: 0; }
+.meta-label { font-weight: 700; font-size: 11px; }
+.meta-value { margin-top: 4px; min-height: 18px; }
+.main-box { border: 1px solid #222; border-top: 0; padding: 8px; }
+.box-title { font-weight: 700; margin-bottom: 4px; }
+.cliente-box { border: 1px solid #222; padding: 6px; min-height: 64px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #222; padding: 5px; height: 26px; }
+th { font-size: 11px; text-align: left; }
+td.qty { text-align: center; width: 60px; }
+.causale { margin-top: 10px; border: 1px solid #222; padding: 6px; min-height: 44px; }
+.final { margin-top: auto; border: 1px solid #222; border-top: 0; padding: 8px; line-height: 1.6; }
+.final .line { display: flex; gap: 10px; }
+.sign { margin-top: 14px; display: flex; justify-content: space-between; }
+@media screen {
+  body { background: #e2e8f0; padding: 12px; }
+  .sheet { background: #fff; padding: 4mm; }
+}
