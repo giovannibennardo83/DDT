@@ -5,53 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stampa DDT</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 2rem;
-      }
-
-      h1 {
-        margin-bottom: 1rem;
-      }
-
-      dl {
-        display: grid;
-        grid-template-columns: max-content 1fr;
-        gap: 0.5rem 1rem;
-      }
-
-      dt {
-        font-weight: 700;
-      }
+      body { font-family: Arial, sans-serif; margin: 1.5rem; color: #111827; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+      .company { font-size: 0.95rem; line-height: 1.3; }
+      .title { font-size: 1.4rem; font-weight: 700; text-transform: uppercase; }
+      .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+      .meta div { border: 1px solid #9ca3af; padding: 0.5rem; min-height: 2.4rem; }
+      .meta strong { display: block; font-size: 0.75rem; color: #374151; margin-bottom: 0.2rem; }
+      table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; }
+      th, td { border: 1px solid #4b5563; padding: 0.45rem; font-size: 0.9rem; }
+      th { background: #e5e7eb; text-align: left; }
+      td.qty { text-align: right; width: 90px; }
+      @media print { body { margin: 0.8cm; } }
     </style>
   </head>
   <body>
-    <h1>Documento di Trasporto</h1>
-    <dl id="details"></dl>
+    <div class="header">
+      <div class="company">
+        <strong>ZIMMER</strong><br />
+        Documento di Trasporto
+      </div>
+      <div class="title">DDT</div>
+    </div>
+
+    <div class="meta">
+      <div><strong>Numero</strong><span id="numero"></span></div>
+      <div><strong>Data</strong><span id="data"></span></div>
+      <div><strong>Cliente</strong><span id="cliente"></span></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>DESCRIZIONE DEI BENI</th>
+          <th>Lotto</th>
+          <th>Quantità</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
 
     <script>
-      const details = document.getElementById('details');
       const last = localStorage.getItem('lastDDT');
+      const rowsNode = document.getElementById('rows');
 
       if (!last) {
-        details.innerHTML = '<p>Nessun DDT disponibile.</p>';
+        rowsNode.innerHTML = '<tr><td colspan="3">Nessun DDT disponibile.</td></tr>';
       } else {
         const ddt = JSON.parse(last);
-        const entries = [
-          ['Numero', ddt.numero],
-          ['Data', ddt.data],
-          ['Cliente', ddt.cliente],
-          ['Articolo', ddt.articolo],
-          ['Quantità', ddt.quantita],
-          ['Creato il', new Date(ddt.createdAt).toLocaleString('it-IT')],
-        ];
+        const righe = Array.isArray(ddt.righe)
+          ? ddt.righe
+          : [{
+              codice_articolo: ddt.codice_articolo || ddt.articolo || ddt.descrizione || '',
+              lotto: ddt.lotto || '',
+              quantita: ddt.quantita || 1,
+            }];
 
-        entries.forEach(([label, value]) => {
-          const dt = document.createElement('dt');
-          dt.textContent = label;
-          const dd = document.createElement('dd');
-          dd.textContent = value;
-          details.append(dt, dd);
+        document.getElementById('numero').textContent = ddt.numero || '';
+        document.getElementById('data').textContent = ddt.data || '';
+        document.getElementById('cliente').textContent = ddt.cliente || '';
+
+        const normalized = righe.map((riga) => ({
+          codice_articolo: String(riga.codice_articolo || riga.descrizione || riga.articolo || '').trim(),
+          lotto: String(riga.lotto || '').trim(),
+          quantita: Math.max(1, Number(riga.quantita) || 1),
+        }));
+
+        while (normalized.length < 15) {
+          normalized.push({ codice_articolo: '', lotto: '', quantita: '' });
+        }
+
+        normalized.slice(0, 15).forEach((riga) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${riga.codice_articolo}</td><td>${riga.lotto}</td><td class="qty">${riga.quantita}</td>`;
+          rowsNode.appendChild(tr);
         });
 
         window.print();
