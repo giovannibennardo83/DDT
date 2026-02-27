@@ -1,55 +1,56 @@
-+<!doctype html>
-+<html lang="it">
-+  <head>
-+    <meta charset="UTF-8" />
-+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-+    <meta name="theme-color" content="#0f172a" />
-+    <link rel="manifest" href="manifest.json" />
-+    <link rel="stylesheet" href="styles.css" />
-+    <title>DDT Manager</title>
-+  </head>
-+  <body>
-+    <header>
-+      <h1>DDT Manager</h1>
-+      <p>Crea e stampa Documenti di Trasporto</p>
-+    </header>
-+
-+    <main>
-+      <form id="ddt-form">
-+        <label>
-+          Numero DDT
-+          <input type="text" id="numero" required />
-+        </label>
-+        <label>
-+          Data
-+          <input type="date" id="data" required />
-+        </label>
-+        <label>
-+          Cliente
-+          <input type="text" id="cliente" required />
-+        </label>
-+        <label>
-+          Articolo
-+          <input type="text" id="articolo" required />
-+        </label>
-+        <label>
-+          Quantità
-+          <input type="number" id="quantita" min="1" required />
-+        </label>
-+
-+        <div class="actions">
-+          <button type="submit">Salva DDT</button>
-+          <button type="button" id="print-last">Stampa ultimo</button>
-+        </div>
-+      </form>
-+
-+      <section>
-+        <h2>Archivio DDT</h2>
-+        <ul id="ddt-list"></ul>
-+      </section>
-+    </main>
-+
-+    <script src="db.js"></script>
-+    <script src="app.js"></script>
-+  </body>
-+</html>
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>DDT Manager</title>
+  </head>
+  <body>
+    <header>
+      <h1>DDT Manager</h1>
+      <p>Crea, modifica e stampa Documenti di Trasporto</p>
+    </header>
+
+    <main>
+      <form id="ddt-form" novalidate>
+        <h2 id="form-title">Nuovo DDT</h2>
+        <label>
+          Numero DDT
+          <input type="text" id="numero" required />
+        </label>
+        <label>
+          Data
+          <input type="date" id="data" required />
+        </label>
+        <label>
+          Cliente
+          <input type="text" id="cliente" required />
+        </label>
+
+        <div class="rows-header">
+          <h3>Righe DDT</h3>
+          <button type="button" id="add-row">Aggiungi riga</button>
+        </div>
+
+        <div id="righe-container" class="righe-grid" role="table" aria-label="Righe DDT"></div>
+
+        <div class="actions">
+          <button type="submit">Salva DDT</button>
+          <button type="button" id="cancel-edit" class="secondary" hidden>Annulla modifica</button>
+          <button type="button" id="print-last" class="secondary">Stampa ultimo</button>
+        </div>
+      </form>
+
+      <section>
+        <h2>Archivio DDT</h2>
+        <ul id="ddt-list"></ul>
+      </section>
+    </main>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
