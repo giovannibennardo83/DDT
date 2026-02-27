@@ -1,4 +1,23 @@
 const DDT_STORAGE_KEY = 'ddtRecords';
+const COUNTER_DB_NAME = 'ddt-db';
+const COUNTER_DB_VERSION = 1;
+const COUNTER_STORE = 'counters';
+
+function normalizeCliente(cliente, destinatario = '') {
+  if (cliente && typeof cliente === 'object') {
+    return {
+      riga1: String(cliente.riga1 ?? cliente.nome ?? destinatario ?? '').trim(),
+      riga2: String(cliente.riga2 ?? '').trim(),
+      riga3: String(cliente.riga3 ?? '').trim(),
+    };
+  }
+
+  return {
+    riga1: String(cliente ?? destinatario ?? '').trim(),
+    riga2: '',
+    riga3: '',
+  };
+}
 
 function normalizeRigaStorage(riga) {
   return {
@@ -22,7 +41,10 @@ function normalizeDDTStorage(ddt) {
   return {
     numero: String(ddt?.numero ?? '').trim(),
     data: String(ddt?.data ?? ''),
-    cliente: String(ddt?.cliente ?? '').trim(),
+    cliente: normalizeCliente(ddt?.cliente, ddt?.destinatario),
+    causale_trasporto: String(ddt?.causale_trasporto ?? '').trim(),
+    iniziali_paziente: String(ddt?.iniziali_paziente ?? '').trim(),
+    cartella_clinica: String(ddt?.cartella_clinica ?? '').trim(),
     righe: sourceRows.map(normalizeRigaStorage),
     createdAt: ddt?.createdAt || new Date().toISOString(),
   };
@@ -45,4 +67,47 @@ function getDDTs() {
 function saveDDTs(ddts) {
   const normalized = Array.isArray(ddts) ? ddts.map(normalizeDDTStorage) : [];
   localStorage.setItem(DDT_STORAGE_KEY, JSON.stringify(normalized));
+}
+
+function openCounterDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(COUNTER_DB_NAME, COUNTER_DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(COUNTER_STORE)) {
+        db.createObjectStore(COUNTER_STORE, { keyPath: 'anno' });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getYearCode(dateString) {
+  const date = dateString ? new Date(dateString) : new Date();
+  const year = Number.isNaN(date.getTime()) ? new Date().getFullYear() : date.getFullYear();
+  return String(year).slice(-2);
+}
+
+async function getNextDDTNumber(dateString) {
+  const anno = getYearCode(dateString);
+  const db = await openCounterDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COUNTER_STORE, 'readwrite');
+    const store = tx.objectStore(COUNTER_STORE);
+    const getReq = store.get(anno);
+
+    getReq.onsuccess = () => {
+      const current = getReq.result || { anno, last: 0 };
+      const next = Number(current.last || 0) + 1;
+      store.put({ anno, last: next });
+      resolve(`${anno}${String(next).padStart(3, '0')}GBE`);
+    };
+
+    getReq.onerror = () => reject(getReq.error);
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
 }
