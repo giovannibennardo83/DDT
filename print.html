@@ -52,7 +52,15 @@
         <div>PORTO Franco</div>
 
         <div class="sign">
-          <div>FIRMA MITTENTE ______________________</div>
+          <div>
+            <img
+              src="assets/firma_gio.png"
+              alt="Firma mittente"
+              style="width: 200px; height: auto; display: block; margin-bottom: 4px;"
+              onerror="this.style.display='none'"
+            />
+            <div>FIRMA MITTENTE ______________________</div>
+          </div>
           <div>FIRMA DESTINATARIO __________________</div>
         </div>
       </div>
@@ -90,12 +98,12 @@
           quantita: Math.max(1, Number(r.quantita) || 1)
         }));
 
-        while (normalized.length < 15) {
+        while (normalized.length < 12) {
           normalized.push({ codice_articolo: '', lotto: '', quantita: '' });
         }
 
         const rowsNode = document.getElementById('rows');
-        normalized.slice(0, 15).forEach((riga) => {
+        normalized.slice(0, 12).forEach((riga) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${riga.codice_articolo}</td><td>${riga.lotto}</td><td class="qty">${riga.quantita}</td>`;
           rowsNode.appendChild(tr);
