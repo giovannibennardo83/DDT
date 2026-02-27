@@ -1,3 +1,12 @@
+const MITTENTE_FISSO = [
+  'Zimmer Biomet c/o',
+  'Migliori Service s.r.l. Unipersonale',
+  'Via Catira Savoca 1',
+  '95037 San Giovanni La Punta (CT)',
+  'Cod. Fisc. e P. Iva 04658810876',
+  'Tel. 095 7894844 - Fax 095 7895283',
+].join('\n');
+
 const form = document.getElementById('ddt-form');
 const list = document.getElementById('ddt-list');
 const printLastButton = document.getElementById('print-last');
@@ -5,6 +14,15 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
+
+const numeroInput = document.getElementById('numero');
+const dataInput = document.getElementById('data');
+const clienteRiga1Input = document.getElementById('cliente_riga1');
+const clienteRiga2Input = document.getElementById('cliente_riga2');
+const clienteRiga3Input = document.getElementById('cliente_riga3');
+const causaleInput = document.getElementById('causale_trasporto');
+const inizialiInput = document.getElementById('iniziali_paziente');
+const cartellaInput = document.getElementById('cartella_clinica');
 
 let editingIndex = null;
 
@@ -25,37 +43,38 @@ function formatRows(righe = []) {
 }
 
 function formatItem(ddt) {
-  return `${ddt.numero} - ${ddt.data} - ${ddt.cliente} (${formatRows(ddt.righe)})`;
+  return `${ddt.numero || 'Senza numero'} - ${ddt.data} - ${ddt.cliente.riga1} (${formatRows(ddt.righe)})`;
+}
+
+function setSimpleFieldError(input, message) {
+  input.classList.add('input-error');
+  const small = input.parentElement.querySelector('.error-message');
+  if (small) small.textContent = message;
+}
+
+function clearSimpleFieldError(input) {
+  input.classList.remove('input-error');
+  const small = input.parentElement.querySelector('.error-message');
+  if (small) small.textContent = '';
 }
 
 function renderRow(riga = createEmptyRiga()) {
   const row = document.createElement('div');
   row.className = 'riga-row';
   row.innerHTML = `
-    <div class="table-label">Codice articolo</div>
     <div class="field-with-actions">
       <input type="text" class="codice_articolo" value="${riga.codice_articolo}" placeholder="Codice articolo" />
-      <div class="inline-actions">
-        <button type="button" class="scan-button" data-scan-target="codice_articolo">Scan Codice</button>
-      </div>
       <small class="error-message"></small>
     </div>
 
-    <div class="table-label">Lotto</div>
     <div class="field-with-actions">
       <input type="text" class="lotto" value="${riga.lotto}" placeholder="Lotto" />
-      <div class="inline-actions">
-        <button type="button" class="scan-button" data-scan-target="lotto">Scan Lotto</button>
-      </div>
       <small class="error-message"></small>
     </div>
 
-    <div class="table-label">Quantità</div>
-    <div class="field-with-actions">
+    <div class="field-with-actions qty-wrap">
       <input type="number" class="quantita" value="${riga.quantita}" min="1" placeholder="Quantità" />
-      <div class="inline-actions">
-        <button type="button" class="danger remove-row">Rimuovi</button>
-      </div>
+      <button type="button" class="danger remove-row">Rimuovi riga</button>
       <small class="error-message"></small>
     </div>
   `;
@@ -69,18 +88,6 @@ function renderRow(riga = createEmptyRiga()) {
 
   row.querySelectorAll('input').forEach((input) => {
     input.addEventListener('input', () => clearFieldError(input));
-  });
-
-  row.querySelectorAll('.scan-button').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const target = button.dataset.scanTarget;
-      const input = row.querySelector(`.${target}`);
-      const scanned = await tryScanValue();
-      if (scanned) {
-        input.value = scanned;
-        clearFieldError(input);
-      }
-    });
   });
 
   righeContainer.appendChild(row);
@@ -107,6 +114,11 @@ function extractAndValidateRighe() {
   const result = [];
   let valid = true;
 
+  if (rows.length === 0) {
+    valid = false;
+    addRiga();
+  }
+
   rows.forEach((row) => {
     const codice = row.querySelector('.codice_articolo');
     const lotto = row.querySelector('.lotto');
@@ -119,17 +131,17 @@ function extractAndValidateRighe() {
     });
 
     if (!normalized.codice_articolo) {
-      setFieldError(codice, 'Inserisci il codice.');
+      setFieldError(codice, 'Obbligatorio');
       valid = false;
     }
 
     if (!normalized.lotto) {
-      setFieldError(lotto, 'Inserisci il lotto.');
+      setFieldError(lotto, 'Obbligatorio');
       valid = false;
     }
 
     if (!Number.isFinite(normalized.quantita) || normalized.quantita < 1) {
-      setFieldError(quantita, 'Quantità minima: 1.');
+      setFieldError(quantita, 'Minimo 1');
       valid = false;
     }
 
@@ -139,44 +151,13 @@ function extractAndValidateRighe() {
   return { valid, righe: result };
 }
 
-async function tryScanValue() {
-  if (!navigator.mediaDevices?.getUserMedia || typeof BarcodeDetector === 'undefined') {
-    return window.prompt('Camera non disponibile. Inserisci valore manualmente:')?.trim();
-  }
-
-  const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'ean_8'] });
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  const video = document.createElement('video');
-  video.srcObject = stream;
-  video.setAttribute('playsinline', 'true');
-  await video.play();
-
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 1280;
-  canvas.height = video.videoHeight || 720;
-  const context = canvas.getContext('2d');
-
-  try {
-    for (let i = 0; i < 30; i += 1) {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const barcodes = await detector.detect(canvas);
-      if (barcodes.length > 0 && barcodes[0].rawValue) {
-        return barcodes[0].rawValue.trim();
-      }
-      await new Promise((resolve) => setTimeout(resolve, 120));
-    }
-  } finally {
-    stream.getTracks().forEach((track) => track.stop());
-  }
-
-  return window.prompt('Nessun codice rilevato. Inserisci valore manualmente:')?.trim();
-}
-
 function resetFormState() {
   editingIndex = null;
   formTitle.textContent = 'Nuovo DDT';
   cancelEditButton.hidden = true;
   form.reset();
+  numeroInput.value = '';
+  numeroInput.placeholder = 'Assegnato al salvataggio';
   righeContainer.innerHTML = '';
   addRiga();
 }
@@ -185,12 +166,29 @@ function loadInForm(ddt, index) {
   editingIndex = index;
   formTitle.textContent = `Modifica DDT ${ddt.numero}`;
   cancelEditButton.hidden = false;
-  document.getElementById('numero').value = ddt.numero;
-  document.getElementById('data').value = ddt.data;
-  document.getElementById('cliente').value = ddt.cliente;
+  numeroInput.value = ddt.numero;
+  dataInput.value = ddt.data;
+  clienteRiga1Input.value = ddt.cliente.riga1 || '';
+  clienteRiga2Input.value = ddt.cliente.riga2 || '';
+  clienteRiga3Input.value = ddt.cliente.riga3 || '';
+  causaleInput.value = ddt.causale_trasporto || '';
+  inizialiInput.value = ddt.iniziali_paziente || '';
+  cartellaInput.value = ddt.cartella_clinica || '';
 
   righeContainer.innerHTML = '';
-  ddt.righe.forEach((riga) => renderRow(normalizeRiga(riga)));
+  if (!ddt.righe.length) {
+    addRiga();
+  } else {
+    ddt.righe.forEach((riga) => renderRow(normalizeRiga(riga)));
+  }
+}
+
+function saveAndPrint(ddt) {
+  localStorage.setItem('printDDT', JSON.stringify({ ...ddt, mittente: MITTENTE_FISSO }));
+  const printWindow = window.open('print.html', '_blank');
+  if (!printWindow) {
+    alert('Impossibile aprire la finestra di stampa.');
+  }
 }
 
 function render(ddts) {
@@ -212,10 +210,7 @@ function render(ddts) {
 
     const printButton = document.createElement('button');
     printButton.textContent = 'Stampa';
-    printButton.addEventListener('click', () => {
-      localStorage.setItem('lastDDT', JSON.stringify(ddt));
-      window.open('print.html', '_blank');
-    });
+    printButton.addEventListener('click', () => saveAndPrint(ddt));
 
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Elimina';
@@ -236,32 +231,50 @@ function render(ddts) {
   });
 }
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
+  clearSimpleFieldError(clienteRiga1Input);
+
   const { valid, righe } = extractAndValidateRighe();
-  if (!valid) {
-    return;
+  let formValid = valid;
+
+  if (!clienteRiga1Input.value.trim()) {
+    setSimpleFieldError(clienteRiga1Input, 'Obbligatorio');
+    formValid = false;
   }
 
-  const ddt = {
-    numero: document.getElementById('numero').value.trim(),
-    data: document.getElementById('data').value,
-    cliente: document.getElementById('cliente').value.trim(),
-    righe,
-    createdAt: new Date().toISOString(),
-  };
+  if (!formValid) return;
 
   const current = getDDTs();
+  const existing = editingIndex === null ? null : current[editingIndex];
+
+  const ddt = {
+    numero: existing?.numero || '',
+    data: dataInput.value,
+    cliente: {
+      riga1: clienteRiga1Input.value.trim(),
+      riga2: clienteRiga2Input.value.trim(),
+      riga3: clienteRiga3Input.value.trim(),
+    },
+    causale_trasporto: causaleInput.value.trim(),
+    iniziali_paziente: inizialiInput.value.trim(),
+    cartella_clinica: cartellaInput.value.trim(),
+    righe,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+  };
+
+  if (!ddt.numero) {
+    ddt.numero = await getNextDDTNumber(ddt.data);
+  }
+
   if (editingIndex === null) {
     current.unshift(ddt);
   } else {
-    ddt.createdAt = current[editingIndex].createdAt || ddt.createdAt;
     current[editingIndex] = ddt;
   }
 
   saveDDTs(current);
-  localStorage.setItem('lastDDT', JSON.stringify(ddt));
   resetFormState();
   render(current);
 });
@@ -277,8 +290,11 @@ printLastButton.addEventListener('click', () => {
     return;
   }
 
-  localStorage.setItem('lastDDT', JSON.stringify(all[0]));
-  window.open('print.html', '_blank');
+  saveAndPrint(all[0]);
+});
+
+[clienteRiga1Input].forEach((input) => {
+  input.addEventListener('input', () => clearSimpleFieldError(input));
 });
 
 if ('serviceWorker' in navigator) {

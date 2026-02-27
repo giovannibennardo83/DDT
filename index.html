@@ -19,15 +19,36 @@
         <h2 id="form-title">Nuovo DDT</h2>
         <label>
           Numero DDT
-          <input type="text" id="numero" required />
+          <input type="text" id="numero" readonly />
+          <small class="error-message"></small>
         </label>
         <label>
           Data
           <input type="date" id="data" required />
+          <small class="error-message"></small>
+        </label>
+
+        <h3>Cliente / Destinatario</h3>
+        <label>
+          Cliente riga 1
+          <input type="text" id="cliente_riga1" placeholder="Struttura / Cliente" required />
+          <small class="error-message"></small>
         </label>
         <label>
-          Cliente
-          <input type="text" id="cliente" required />
+          Cliente riga 2
+          <input type="text" id="cliente_riga2" placeholder="Reparto / riferimento" />
+          <small class="error-message"></small>
+        </label>
+        <label>
+          Cliente riga 3
+          <input type="text" id="cliente_riga3" placeholder="Indirizzo / città" />
+          <small class="error-message"></small>
+        </label>
+
+        <label>
+          Causale del trasporto
+          <textarea id="causale_trasporto" rows="2"></textarea>
+          <small class="error-message"></small>
         </label>
 
         <div class="rows-header">
@@ -35,7 +56,24 @@
           <button type="button" id="add-row">Aggiungi riga</button>
         </div>
 
+        <div class="righe-head">
+          <strong>Codice articolo</strong>
+          <strong>Lotto</strong>
+          <strong>Quantità</strong>
+        </div>
         <div id="righe-container" class="righe-grid" role="table" aria-label="Righe DDT"></div>
+
+        <h3>Sezione finale</h3>
+        <label>
+          Iniziali Paziente
+          <input type="text" id="iniziali_paziente" />
+          <small class="error-message"></small>
+        </label>
+        <label>
+          N. cartella Clinica
+          <input type="text" id="cartella_clinica" />
+          <small class="error-message"></small>
+        </label>
 
         <div class="actions">
           <button type="submit">Salva DDT</button>

@@ -25,13 +25,16 @@ form, section {
 
 label { display: block; margin-bottom: 0.75rem; font-weight: 600; }
 
-input {
+input, textarea {
   width: 100%;
   margin-top: 0.35rem;
   padding: 0.5rem;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
+  font: inherit;
 }
+
+#numero { font-weight: 700; background: #f8fafc; }
 
 .rows-header {
   margin-top: 1rem;
@@ -40,29 +43,33 @@ input {
   justify-content: space-between;
 }
 
-.righe-grid {
-  margin-top: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
+.righe-head,
 .riga-row {
   display: grid;
-  grid-template-columns: 150px 1fr;
-  border-bottom: 1px solid #e2e8f0;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0.5rem;
 }
 
-.riga-row:last-child { border-bottom: 0; }
-.table-label {
-  padding: 0.75rem;
+.righe-head {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
   background: #f8fafc;
-  border-right: 1px solid #e2e8f0;
-  font-weight: 700;
 }
 
-.field-with-actions { padding: 0.55rem; }
-.inline-actions { margin-top: 0.4rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.righe-grid {
+  border: 1px solid #cbd5e1;
+  border-radius: 0 0 10px 10px;
+  padding: 0.5rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field-with-actions { display: grid; }
+.qty-wrap { grid-template-columns: 1fr auto; gap: 0.35rem; align-items: start; }
+.qty-wrap .error-message { grid-column: 1 / -1; }
 
 .actions, li { display: flex; gap: 0.5rem; align-items: center; }
 .actions { margin-top: 1rem; flex-wrap: wrap; }
@@ -79,9 +86,8 @@ button {
 
 button.secondary { background: #475569; }
 button.danger { background: #dc2626; }
-button.scan-button { padding: 0.35rem 0.5rem; font-size: 0.82rem; }
 
-.error-message { color: #b91c1c; display: block; min-height: 1rem; margin-top: 0.2rem; }
+.error-message { color: #b91c1c; display: block; min-height: 1rem; margin-top: 0.2rem; font-size: 0.8rem; }
 .input-error { border-color: #ef4444; box-shadow: 0 0 0 1px #ef4444 inset; }
 
 ul { list-style: none; padding: 0; margin: 0; }
@@ -93,28 +99,15 @@ li {
 }
 
 @media (max-width: 720px) {
+  .righe-head { display: none; }
   .riga-row {
     grid-template-columns: 1fr;
-    gap: 0;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    margin: 0.6rem;
     padding: 0.5rem;
-  }
-
-  .table-label {
-    border-right: 0;
-    background: none;
-    padding: 0.35rem 0;
-  }
-
-  .righe-grid {
-    border: 0;
-    background: #f8fafc;
-    padding: 0.1rem;
   }
 }
 
 @media print {
-  header, main { margin: 0; padding: 0; }
+  body > * { display: none !important; }
 }
