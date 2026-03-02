@@ -14,6 +14,7 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
+const syncFeedback = document.getElementById('sync-feedback');
 
 const numeroInput = document.getElementById('numero');
 const dataInput = document.getElementById('data');
@@ -25,6 +26,24 @@ const inizialiInput = document.getElementById('iniziali_paziente');
 const cartellaInput = document.getElementById('cartella_clinica');
 
 let editingIndex = null;
+
+function showSyncFeedback(message, isError = false) {
+  if (!syncFeedback) return;
+  syncFeedback.textContent = message;
+  syncFeedback.classList.toggle('error', isError);
+}
+
+async function persistAndSync(ddts) {
+  saveDDTs(ddts);
+  setLastUpdatedAt();
+
+  const result = await backupToDrive();
+  if (result.ok) {
+    showSyncFeedback('DDT salvato in Drive');
+  } else if (!result.offline) {
+    showSyncFeedback('Errore backup Drive', true);
+  }
+}
 
 function createEmptyRiga() {
   return { codice_articolo: '', lotto: '', quantita: 1 };
@@ -218,7 +237,7 @@ function render(ddts) {
     deleteButton.addEventListener('click', () => {
       const updated = getDDTs();
       updated.splice(index, 1);
-      saveDDTs(updated);
+      persistAndSync(updated);
       render(updated);
       if (editingIndex === index) {
         resetFormState();
@@ -274,7 +293,7 @@ form.addEventListener('submit', async (event) => {
     current[editingIndex] = ddt;
   }
 
-  saveDDTs(current);
+  await persistAndSync(current);
   resetFormState();
   render(current);
 });
@@ -303,5 +322,21 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-resetFormState();
-render(getDDTs());
+async function initApp() {
+  const restore = await restoreFromDriveIfNeeded();
+  if (restore.restored) {
+    showSyncFeedback('Dati ripristinati da Drive');
+  }
+
+  resetFormState();
+  render(getDDTs());
+
+  window.addEventListener('online', async () => {
+    const retry = await retryPendingBackup();
+    if (retry.ok && !retry.skipped) {
+      showSyncFeedback('DDT salvato in Drive');
+    }
+  });
+}
+
+initApp();

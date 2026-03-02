@@ -111,3 +111,18 @@ li {
 @media print {
   body > * { display: none !important; }
 }
+
+#sync-feedback {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-weight: 600;
+  min-height: 1.3rem;
+}
+
+#sync-feedback.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
