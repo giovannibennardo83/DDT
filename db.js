@@ -69,6 +69,10 @@ function saveDDTs(ddts) {
   localStorage.setItem(DDT_STORAGE_KEY, JSON.stringify(normalized));
 }
 
+async function getAllDDT() {
+  return getDDTs();
+}
+
 function openCounterDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(COUNTER_DB_NAME, COUNTER_DB_VERSION);
@@ -108,6 +112,20 @@ async function getNextDDTNumber(dateString) {
     };
 
     getReq.onerror = () => reject(getReq.error);
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}
+
+async function getCounters() {
+  const db = await openCounterDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COUNTER_STORE, 'readonly');
+    const store = tx.objectStore(COUNTER_STORE);
+    const req = store.getAll();
+
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
     tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
 }
