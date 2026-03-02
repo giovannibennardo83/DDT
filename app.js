@@ -209,9 +209,6 @@ async function backupToDrive() {
 
     const res = await fetch(BACKUP_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(data),
     });
 
