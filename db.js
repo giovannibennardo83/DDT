@@ -111,3 +111,21 @@ async function getNextDDTNumber(dateString) {
     tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
 }
+
+async function getAllDDT() {
+  return getDDTs();
+}
+
+async function getCounters() {
+  const db = await openCounterDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COUNTER_STORE, 'readonly');
+    const store = tx.objectStore(COUNTER_STORE);
+    const req = store.getAll();
+
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}

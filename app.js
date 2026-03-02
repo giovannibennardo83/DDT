@@ -14,6 +14,7 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
+const BACKUP_URL = 'INCOLLA_QUI_IL_TUO_URL_SCRIPT';
 
 const numeroInput = document.getElementById('numero');
 const dataInput = document.getElementById('data');
@@ -191,6 +192,35 @@ function saveAndPrint(ddt) {
   }
 }
 
+async function backupToDrive() {
+  console.log('PARTO BACKUP');
+
+  try {
+    const ddt = await getAllDDT();
+    const counters = await getCounters();
+
+    const data = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      ddt,
+      counters,
+    };
+
+    const res = await fetch(BACKUP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const json = await res.json();
+    console.log('BACKUP OK', json);
+  } catch (err) {
+    console.error('BACKUP ERROR', err);
+  }
+}
+
 function render(ddts) {
   list.innerHTML = '';
 
@@ -275,6 +305,8 @@ form.addEventListener('submit', async (event) => {
   }
 
   saveDDTs(current);
+  console.log('SALVATAGGIO DDT');
+  backupToDrive();
   resetFormState();
   render(current);
 });
