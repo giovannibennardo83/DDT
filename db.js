@@ -1,7 +1,10 @@
 const DDT_STORAGE_KEY = 'ddtRecords';
+const BACKUP_URL = 'https://script.google.com/macros/s/AKfycbzbF4v2-01P9AvsUWPhJFrdow5mPljOCiZYpZr_KrPIcB1qZmtzP53mTiFvI_ucw8g/exec';
 const COUNTER_DB_NAME = 'ddt-db';
 const COUNTER_DB_VERSION = 1;
 const COUNTER_STORE = 'counters';
+const BACKUP_PENDING_KEY = 'ddtBackupPending';
+const LAST_UPDATED_AT_KEY = 'ddtLastUpdatedAt';
 
 function normalizeCliente(cliente, destinatario = '') {
   if (cliente && typeof cliente === 'object') {
@@ -69,6 +72,22 @@ function saveDDTs(ddts) {
   localStorage.setItem(DDT_STORAGE_KEY, JSON.stringify(normalized));
 }
 
+function setLastUpdatedAt(value = new Date().toISOString()) {
+  localStorage.setItem(LAST_UPDATED_AT_KEY, value);
+}
+
+function getLastUpdatedAt() {
+  return localStorage.getItem(LAST_UPDATED_AT_KEY) || '';
+}
+
+function setBackupPending(value) {
+  localStorage.setItem(BACKUP_PENDING_KEY, String(Boolean(value)));
+}
+
+function isBackupPending() {
+  return localStorage.getItem(BACKUP_PENDING_KEY) === 'true';
+}
+
 function openCounterDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(COUNTER_DB_NAME, COUNTER_DB_VERSION);
@@ -110,4 +129,161 @@ async function getNextDDTNumber(dateString) {
     getReq.onerror = () => reject(getReq.error);
     tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
+}
+
+function extractCounterFromNumero(numero) {
+  const match = String(numero || '').match(/^(\d{2})(\d+)GBE$/i);
+  if (!match) return null;
+
+  return {
+    anno: match[1],
+    progressivo: Number(match[2]) || 0,
+  };
+}
+
+async function getCounters() {
+  const db = await openCounterDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COUNTER_STORE, 'readonly');
+    const store = tx.objectStore(COUNTER_STORE);
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+      const result = Array.isArray(req.result) ? req.result : [];
+      resolve(
+        result.map((item) => ({
+          anno: String(item?.anno ?? '').trim(),
+          last: Math.max(0, Number(item?.last) || 0),
+        })),
+      );
+    };
+
+    req.onerror = () => reject(req.error);
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}
+
+async function saveCounters(counters) {
+  const db = await openCounterDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COUNTER_STORE, 'readwrite');
+    const store = tx.objectStore(COUNTER_STORE);
+
+    store.clear();
+    (Array.isArray(counters) ? counters : []).forEach((item) => {
+      const anno = String(item?.anno ?? '').trim();
+      if (!anno) return;
+      store.put({ anno, last: Math.max(0, Number(item?.last) || 0) });
+    });
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}
+
+function reconcileCountersWithDDTs(ddts, counters) {
+  const merged = new Map();
+
+  (Array.isArray(counters) ? counters : []).forEach((counter) => {
+    const anno = String(counter?.anno ?? '').trim();
+    if (!anno) return;
+    merged.set(anno, Math.max(merged.get(anno) || 0, Number(counter?.last) || 0));
+  });
+
+  (Array.isArray(ddts) ? ddts : []).forEach((ddt) => {
+    const parsed = extractCounterFromNumero(ddt?.numero);
+    if (!parsed) return;
+    merged.set(parsed.anno, Math.max(merged.get(parsed.anno) || 0, parsed.progressivo));
+  });
+
+  return [...merged.entries()].map(([anno, last]) => ({ anno, last }));
+}
+
+async function buildBackupPayload() {
+  const ddt = getDDTs();
+  const counters = await getCounters();
+  return {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    ddt,
+    counters,
+  };
+}
+
+async function backupToDrive() {
+  if (!navigator.onLine) {
+    setBackupPending(true);
+    return { ok: false, offline: true };
+  }
+
+  try {
+    const payload = await buildBackupPayload();
+    const response = await fetch(BACKUP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    setBackupPending(false);
+    setLastUpdatedAt(payload.updatedAt);
+    return { ok: true };
+  } catch (error) {
+    console.error('Errore backup Drive:', error);
+    setBackupPending(true);
+    return { ok: false, offline: !navigator.onLine };
+  }
+}
+
+async function retryPendingBackup() {
+  if (!isBackupPending()) return { ok: true, skipped: true };
+  return backupToDrive();
+}
+
+async function restoreFromDriveIfNeeded() {
+  if (!navigator.onLine) {
+    return { restored: false, reason: 'offline' };
+  }
+
+  try {
+    const response = await fetch(BACKUP_URL, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = (await response.text()).trim();
+    if (!text) {
+      return { restored: false, reason: 'empty' };
+    }
+
+    const remote = JSON.parse(text);
+    if (!remote || !Array.isArray(remote.ddt) || !Array.isArray(remote.counters) || !remote.updatedAt) {
+      return { restored: false, reason: 'invalid' };
+    }
+
+    const localUpdatedAt = getLastUpdatedAt();
+    const remoteTs = Date.parse(remote.updatedAt) || 0;
+    const localTs = Date.parse(localUpdatedAt) || 0;
+    if (remoteTs <= localTs) {
+      return { restored: false, reason: 'local_newer' };
+    }
+
+    const normalizedDDTs = remote.ddt.map(normalizeDDTStorage);
+    saveDDTs(normalizedDDTs);
+
+    const normalizedCounters = reconcileCountersWithDDTs(normalizedDDTs, remote.counters);
+    await saveCounters(normalizedCounters);
+
+    setLastUpdatedAt(remote.updatedAt);
+    setBackupPending(false);
+    return { restored: true };
+  } catch (error) {
+    console.error('Errore ripristino Drive:', error);
+    return { restored: false, reason: 'error' };
+  }
 }
