@@ -234,6 +234,7 @@ async function syncDDT() {
 
     const res = await fetch(BACKUP_URL + "?t=" + Date.now());
     const remote = await res.json();
+    console.log("REMOTE:", remote);
 
     if (!remote || remote.empty) {
       console.log('SYNC: nessun dato remoto');
