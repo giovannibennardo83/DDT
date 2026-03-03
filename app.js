@@ -232,7 +232,7 @@ async function syncDDT() {
     const localCounters = await getCounters();
     void localCounters;
 
-    const res = await fetch(BACKUP_URL);
+    const res = await fetch(BACKUP_URL + "?t=" + Date.now());
     const remote = await res.json();
 
     if (!remote || remote.empty) {
@@ -260,13 +260,15 @@ async function syncDDT() {
     await saveAllDDT(finalDDT);
     await updateCountersFromDDT(finalDDT);
     render(finalDDT);
-    // 🔥 INVIO DIRETTO A DRIVE (SYNC CORRETTO)
+    const counters = await getCounters();
+
     await fetch(BACKUP_URL, {
       method: 'POST',
         body: JSON.stringify({
-          version: 1,
+        version: 1,
         updatedAt: new Date().toISOString(),
-      ddt: finalDDT
+        ddt: finalDDT,
+        counters: counters
         })
     });
 
@@ -410,7 +412,9 @@ if ('serviceWorker' in navigator) {
 }
 
 resetFormState();
-render(getDDTs());
-syncDDT();
+
+(async () => {
+  await syncDDT();
+})();
 setInterval(syncDDT, 300000);
 window.addEventListener('online', syncDDT);
