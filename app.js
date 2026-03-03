@@ -252,41 +252,39 @@ async function syncDDT() {
     }
 
     const remoteDDT = remote.ddt || [];
-      console.log("REMOTE DDT:", remoteDDT.length);
-      console.log("LOCAL DDT:", localDDT.length);
-    const merged = {};
+    console.log("REMOTE DDT:", remoteDDT.length);
+    console.log("LOCAL DDT:", localDDT.length);
+    const map = {};
 
-    localDDT.forEach((d) => {
-      merged[d.id] = d;
+    // remoto vince sempre
+    remoteDDT.forEach((d) => {
+      map[d.id] = d;
     });
 
-    remoteDDT.forEach((d) => {
-      if (!merged[d.id]) {
-        merged[d.id] = d;
-      } else if (new Date(d.updatedAt) > new Date(merged[d.id].updatedAt)) {
-        merged[d.id] = d;
+    // aggiungi locali solo se non esistono
+    localDDT.forEach((d) => {
+      if (!map[d.id]) {
+        map[d.id] = d;
       }
     });
 
-    const finalDDT = Object.values(merged).sort((a, b) => {
+    const finalDDT = Object.values(map).sort((a, b) => {
       const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
       const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
       return numB - numA; // più recente sopra
-      });
+    });
 
     await saveAllDDT(finalDDT);
     await updateCountersFromDDT(finalDDT);
     render(finalDDT);
-    const counters = await getCounters();
-
     await fetch(BACKUP_URL, {
       method: 'POST',
-        body: JSON.stringify({
+      body: JSON.stringify({
         version: 1,
         updatedAt: new Date().toISOString(),
         ddt: finalDDT,
-        counters: counters
-        })
+        counters: await getCounters(),
+      })
     });
 
     console.log('SYNC OK');
@@ -391,7 +389,7 @@ function render(ddts) {
     return numB - numA;
   });
   list.innerHTML = '';
-  const visibleDDT = ddts.filter((ddt) => !ddt.deleted);
+  const visibleDDT = ddts;
 
   visibleDDT.forEach((ddt) => {
     const index = ddts.findIndex((currentDDT) => currentDDT.id === ddt.id);
@@ -415,25 +413,24 @@ function render(ddts) {
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Elimina';
     deleteButton.className = 'danger';
-    deleteButton.addEventListener('click', () => {
+    deleteButton.addEventListener('click', async () => {
       const updated = getDDTs();
-      const target = updated[index];
-      if (!target) return;
+      if (index < 0 || index >= updated.length) return;
 
-      updated[index] = {
-        ...target,
-        deleted: true,
-        updatedAt: new Date().toISOString(),
-      };
+      // eliminazione reale
+      updated.splice(index, 1);
 
       saveDDTs(updated);
       render(updated);
+
       if (editingIndex === index) {
         resetFormState();
       }
 
-      backupToDrive();
-      syncDDT();
+      console.log('DDT ELIMINATO DEFINITIVAMENTE');
+
+      await backupToDrive();
+      await syncDDT();
     });
 
     buttons.append(editButton, printButton, deleteButton);
@@ -475,7 +472,6 @@ form.addEventListener('submit', async (event) => {
     righe,
     createdAt: existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    deleted: false,
   };
 
   if (!ddt.numero) {
@@ -505,7 +501,7 @@ addRowButton.addEventListener('click', addRiga);
 cancelEditButton.addEventListener('click', resetFormState);
 
 printLastButton.addEventListener('click', () => {
-  const all = getDDTs().filter((ddt) => !ddt.deleted);
+  const all = getDDTs();
   if (all.length === 0) {
     alert('Nessun DDT disponibile da stampare.');
     return;

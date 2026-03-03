@@ -57,7 +57,6 @@ function normalizeDDTStorage(ddt) {
     righe: sourceRows.map(normalizeRigaStorage),
     createdAt: ddt?.createdAt || new Date().toISOString(),
     updatedAt: ddt?.updatedAt || new Date().toISOString(),
-    deleted: Boolean(ddt?.deleted),
   };
 }
 
@@ -113,7 +112,7 @@ function getYearCode(dateString) {
 async function getNextDDTNumber(dateString) {
   const anno = getYearCode(dateString);
 
-  const all = (await getAllDDT()).filter(d => !d.deleted);
+  const all = await getAllDDT();
 
   let max = 0;
 
@@ -179,7 +178,7 @@ async function updateCountersFromDDT(ddtList) {
   const counters = {};
 
   (ddtList || []).forEach((d) => {
-    if (!d?.numero || d?.deleted) return;
+    if (!d?.numero) return;
 
     const anno = d.numero.substring(0, 2);
     const progressivo = parseInt(d.numero.substring(2, 5), 10);
