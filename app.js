@@ -14,6 +14,11 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
+const scannerModal = document.getElementById('scanner-modal');
+const scannerContainer = document.getElementById('scanner');
+const scannerCloseButton = document.getElementById('scanner-close');
+let activeHtml5QrCode = null;
+
 
 const BACKUP_URL = 'https://script.google.com/macros/s/AKfycbzbF4v2-01P9AvsUWPhJFrdow5mPljOCiZYpZr_KrPIcB1qZmtzP53mTiFvI_ucw8g/exec';
 
@@ -72,6 +77,7 @@ function renderRow(riga = createEmptyRiga()) {
 
     <div class="field-with-actions">
       <input type="text" class="lotto" value="${riga.lotto}" placeholder="Lotto" />
+      <button type="button" class="scan-btn secondary">📷 Scan</button>
       <small class="error-message"></small>
     </div>
 
@@ -87,6 +93,10 @@ function renderRow(riga = createEmptyRiga()) {
     if (righeContainer.children.length === 0) {
       addRiga();
     }
+  });
+
+  row.querySelector('.scan-btn').addEventListener('click', () => {
+    startScanner(row);
   });
 
   row.querySelectorAll('input').forEach((input) => {
@@ -287,6 +297,93 @@ async function syncDDT() {
   }
 }
 
+
+async function stopScanner() {
+  if (activeHtml5QrCode) {
+    try {
+      await activeHtml5QrCode.stop();
+    } catch (error) {
+      console.warn('Stop scanner warning:', error);
+    }
+    try {
+      await activeHtml5QrCode.clear();
+    } catch (error) {
+      console.warn('Clear scanner warning:', error);
+    }
+    activeHtml5QrCode = null;
+  }
+
+  if (scannerModal) scannerModal.style.display = 'none';
+  if (scannerContainer) scannerContainer.innerHTML = '';
+  document.body.classList.remove('scanner-open');
+}
+
+function startScanner(row) {
+  if (!window.isSecureContext) {
+    alert('La scansione richiede HTTPS (o localhost).');
+    return;
+  }
+
+  if (typeof Html5Qrcode === 'undefined') {
+    alert('Scanner non disponibile.');
+    return;
+  }
+
+  if (!scannerModal || !scannerContainer) {
+    alert('Container scanner non disponibile.');
+    return;
+  }
+
+  if (activeHtml5QrCode) {
+    void stopScanner();
+  }
+
+  scannerModal.style.display = 'block';
+  document.body.classList.add('scanner-open');
+  activeHtml5QrCode = new Html5Qrcode('scanner');
+
+  Html5Qrcode.getCameras()
+    .then((devices) => {
+      if (!devices.length) {
+        alert('Nessuna camera trovata');
+        return stopScanner();
+      }
+
+      const preferredCamera = devices.find((device) => /back|rear|environment/i.test(device.label || ''));
+      const cameraId = (preferredCamera || devices[0]).id;
+
+      return activeHtml5QrCode.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          const codiceInput = row.querySelector('.codice_articolo');
+          const lottoInput = row.querySelector('.lotto');
+
+          const parts = decodedText.split(/[\s|,;]/).filter(Boolean);
+
+          codiceInput.value = parts[0] || '';
+          lottoInput.value = parts[1] || '';
+
+          clearFieldError(codiceInput);
+          clearFieldError(lottoInput);
+
+          void stopScanner();
+        },
+        () => {
+          // opzionale
+        },
+      );
+    })
+    .catch((error) => {
+      console.error('Errore scanner:', error);
+      alert('Impossibile avviare la fotocamera. Verifica i permessi.');
+      void stopScanner();
+    });
+}
+
 function render(ddts) {
     ddts = [...ddts].sort((a, b) => {
     const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
@@ -416,6 +513,21 @@ printLastButton.addEventListener('click', () => {
 
   saveAndPrint(all[0]);
 });
+
+
+if (scannerCloseButton) {
+  scannerCloseButton.addEventListener('click', () => {
+    void stopScanner();
+  });
+}
+
+if (scannerModal) {
+  scannerModal.addEventListener('click', (event) => {
+    if (event.target === scannerModal) {
+      void stopScanner();
+    }
+  });
+}
 
 [clienteRiga1Input].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
