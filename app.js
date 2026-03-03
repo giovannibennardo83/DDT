@@ -27,6 +27,7 @@ const inizialiInput = document.getElementById('iniziali_paziente');
 const cartellaInput = document.getElementById('cartella_clinica');
 
 let editingIndex = null;
+let syncInProgress = false;
 
 function createEmptyRiga() {
   return { codice_articolo: '', lotto: '', quantita: 1 };
@@ -219,10 +220,62 @@ async function backupToDrive() {
   }
 }
 
+async function syncDDT() {
+  if (syncInProgress) return;
+
+  syncInProgress = true;
+
+  try {
+    console.log('SYNC START');
+
+    const localDDT = await getAllDDT();
+    const localCounters = await getCounters();
+    void localCounters;
+
+    const res = await fetch(BACKUP_URL);
+    const remote = await res.json();
+
+    if (!remote || remote.empty) {
+      console.log('SYNC: nessun dato remoto');
+      return;
+    }
+
+    const remoteDDT = remote.ddt || [];
+    const merged = {};
+
+    localDDT.forEach((d) => {
+      merged[d.id] = d;
+    });
+
+    remoteDDT.forEach((d) => {
+      if (!merged[d.id]) {
+        merged[d.id] = d;
+      } else if (new Date(d.updatedAt) > new Date(merged[d.id].updatedAt)) {
+        merged[d.id] = d;
+      }
+    });
+
+    const finalDDT = Object.values(merged);
+
+    await saveAllDDT(finalDDT);
+    await updateCountersFromDDT(finalDDT);
+    render(finalDDT);
+    await backupToDrive();
+
+    console.log('SYNC OK');
+  } catch (err) {
+    console.error('SYNC ERROR', err);
+  } finally {
+    syncInProgress = false;
+  }
+}
+
 function render(ddts) {
   list.innerHTML = '';
+  const visibleDDT = ddts.filter((ddt) => !ddt.deleted);
 
-  ddts.forEach((ddt, index) => {
+  visibleDDT.forEach((ddt) => {
+    const index = ddts.findIndex((currentDDT) => currentDDT.id === ddt.id);
     const li = document.createElement('li');
 
     const text = document.createElement('span');
@@ -245,12 +298,23 @@ function render(ddts) {
     deleteButton.className = 'danger';
     deleteButton.addEventListener('click', () => {
       const updated = getDDTs();
-      updated.splice(index, 1);
+      const target = updated[index];
+      if (!target) return;
+
+      updated[index] = {
+        ...target,
+        deleted: true,
+        updatedAt: new Date().toISOString(),
+      };
+
       saveDDTs(updated);
       render(updated);
       if (editingIndex === index) {
         resetFormState();
       }
+
+      backupToDrive();
+      syncDDT();
     });
 
     buttons.append(editButton, printButton, deleteButton);
@@ -278,6 +342,7 @@ form.addEventListener('submit', async (event) => {
   const existing = editingIndex === null ? null : current[editingIndex];
 
   const ddt = {
+    id: existing?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ddt-${Date.now()}`),
     numero: existing?.numero || '',
     data: dataInput.value,
     cliente: {
@@ -290,6 +355,8 @@ form.addEventListener('submit', async (event) => {
     cartella_clinica: cartellaInput.value.trim(),
     righe,
     createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    deleted: false,
   };
 
   if (!ddt.numero) {
@@ -305,6 +372,7 @@ form.addEventListener('submit', async (event) => {
   saveDDTs(current);
   console.log('SALVATAGGIO DDT');
   backupToDrive();
+  syncDDT();
   resetFormState();
   render(current);
 });
@@ -314,7 +382,7 @@ addRowButton.addEventListener('click', addRiga);
 cancelEditButton.addEventListener('click', resetFormState);
 
 printLastButton.addEventListener('click', () => {
-  const all = getDDTs();
+  const all = getDDTs().filter((ddt) => !ddt.deleted);
   if (all.length === 0) {
     alert('Nessun DDT disponibile da stampare.');
     return;
@@ -335,3 +403,6 @@ if ('serviceWorker' in navigator) {
 
 resetFormState();
 render(getDDTs());
+syncDDT();
+setInterval(syncDDT, 300000);
+window.addEventListener('online', syncDDT);
