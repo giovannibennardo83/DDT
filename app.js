@@ -242,6 +242,8 @@ async function syncDDT() {
     }
 
     const remoteDDT = remote.ddt || [];
+      console.log("REMOTE DDT:", remoteDDT.length);
+      console.log("LOCAL DDT:", localDDT.length);
     const merged = {};
 
     localDDT.forEach((d) => {
