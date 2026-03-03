@@ -139,11 +139,7 @@ async function getNextDDTNumber(dateString) {
 
   return `${anno}${String(next).padStart(3, '0')}GBE`;
 }
-    getReq.onerror = () => reject(getReq.error);
-    tx.onerror = () => reject(tx.error);
-  }).finally(() => db.close());
-}
-
+  
 async function getCounters() {
   const db = await openCounterDb();
 
