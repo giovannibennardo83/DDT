@@ -112,20 +112,33 @@ function getYearCode(dateString) {
 
 async function getNextDDTNumber(dateString) {
   const anno = getYearCode(dateString);
-  const db = await openCounterDb();
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(COUNTER_STORE, 'readwrite');
-    const store = tx.objectStore(COUNTER_STORE);
-    const getReq = store.get(anno);
+  const all = (await getAllDDT()).filter(d => !d.deleted);
 
-    getReq.onsuccess = () => {
-      const current = getReq.result || { anno, last: 0 };
-      const next = Number(current.last || 0) + 1;
-      store.put({ anno, last: next });
-      resolve(`${anno}${String(next).padStart(3, '0')}GBE`);
-    };
+  let max = 0;
 
+  all.forEach(d => {
+    if (!d.numero) return;
+
+    const dAnno = d.numero.substring(0, 2);
+    const progressivo = parseInt(d.numero.substring(2, 5), 10);
+
+    if (dAnno === anno && Number.isFinite(progressivo)) {
+      if (progressivo > max) max = progressivo;
+    }
+  });
+
+  const next = max + 1;
+
+  // aggiorna comunque il counter (backup)
+  const counters = await getCounters();
+  const updated = {};
+  counters.forEach(c => updated[c.anno] = c.last);
+  updated[anno] = next;
+  await saveCounters(updated);
+
+  return `${anno}${String(next).padStart(3, '0')}GBE`;
+}
     getReq.onerror = () => reject(getReq.error);
     tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
