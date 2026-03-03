@@ -254,26 +254,13 @@ async function syncDDT() {
     const remoteDDT = remote.ddt || [];
     console.log("REMOTE DDT:", remoteDDT.length);
     console.log("LOCAL DDT:", localDDT.length);
-    const map = {};
-
-    // remoto vince sempre
-    remoteDDT.forEach((d) => {
-      map[d.id] = d;
+    
+    const finalDDT = (remoteDDT || []).sort((a, b) => {
+    const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
+    const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
+    return numB - numA;
     });
-
-    // aggiungi locali solo se non esistono
-    localDDT.forEach((d) => {
-      if (!map[d.id]) {
-        map[d.id] = d;
-      }
-    });
-
-    const finalDDT = Object.values(map).sort((a, b) => {
-      const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
-      const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
-      return numB - numA; // più recente sopra
-    });
-
+  
     await saveAllDDT(finalDDT);
     await updateCountersFromDDT(finalDDT);
     render(finalDDT);
