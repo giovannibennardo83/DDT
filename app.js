@@ -260,7 +260,15 @@ async function syncDDT() {
     await saveAllDDT(finalDDT);
     await updateCountersFromDDT(finalDDT);
     render(finalDDT);
-    await backupToDrive();
+    // 🔥 INVIO DIRETTO A DRIVE (SYNC CORRETTO)
+    await fetch(BACKUP_URL, {
+      method: 'POST',
+        body: JSON.stringify({
+          version: 1,
+        updatedAt: new Date().toISOString(),
+      ddt: finalDDT
+        })
+    });
 
     console.log('SYNC OK');
   } catch (err) {
