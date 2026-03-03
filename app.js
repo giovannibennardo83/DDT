@@ -258,7 +258,11 @@ async function syncDDT() {
       }
     });
 
-    const finalDDT = Object.values(merged);
+    const finalDDT = Object.values(merged).sort((a, b) => {
+      const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
+      const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
+      return numB - numA; // più recente sopra
+      });
 
     await saveAllDDT(finalDDT);
     await updateCountersFromDDT(finalDDT);
@@ -284,6 +288,11 @@ async function syncDDT() {
 }
 
 function render(ddts) {
+    ddts = [...ddts].sort((a, b) => {
+    const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
+    const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
+    return numB - numA;
+  });
   list.innerHTML = '';
   const visibleDDT = ddts.filter((ddt) => !ddt.deleted);
 
@@ -387,7 +396,11 @@ form.addEventListener('submit', async (event) => {
   backupToDrive();
   syncDDT();
   resetFormState();
-  render(current);
+  render(current.sort((a, b) => {
+  const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
+  const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
+  return numB - numA;
+}));
 });
 
 addRowButton.addEventListener('click', addRiga);
