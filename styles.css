@@ -111,3 +111,46 @@ li {
 @media print {
   body > * { display: none !important; }
 }
+
+
+.scan-btn {
+  margin-top: 0.35rem;
+  width: fit-content;
+}
+
+
+#scanner-modal {
+  display: none;
+  padding: 1rem;
+}
+
+#scanner-modal .scanner-panel {
+  position: relative;
+  width: min(520px, 100%);
+  height: min(80vh, 720px);
+  margin: 0 auto;
+  margin-top: 4vh;
+}
+
+#scanner {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#scanner-modal .scanner-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10000;
+}
+
+body.scanner-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+@media (max-width: 720px) {
+  .scan-btn {
+    width: 100%;
+  }
+}
