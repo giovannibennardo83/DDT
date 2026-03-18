@@ -59,8 +59,14 @@ Rispondi SOLO JSON:
     });
 
     const text = response.output[0].content[0].text;
+  
+    const clean = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-    const parsed = JSON.parse(text);
+const parsed = JSON.parse(clean);
+    
 
     return res.status(200).json(parsed);
 
