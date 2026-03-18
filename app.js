@@ -212,19 +212,37 @@ function saveAndPrint(ddt) {
   }
 }
 
-async function backupToDrive() {
+async function backupToDrive(options = {}) {
+  const { skipRemoteSafetyCheck = false } = options;
   console.log('PARTO BACKUP');
 
   try {
     const ddt = await getAllDDT();
     const counters = await getCounters();
+    const localUpdatedAt = new Date().toISOString();
 
     const data = {
       version: 1,
-      updatedAt: new Date().toISOString(),
+      updatedAt: localUpdatedAt,
       ddt,
       counters,
     };
+
+    if (!skipRemoteSafetyCheck) {
+      const remoteRes = await fetch(BACKUP_URL + '?t=' + Date.now());
+      const remote = await remoteRes.json();
+
+      const remoteDate = remote?.updatedAt ? new Date(remote.updatedAt) : null;
+      const localDate = new Date(localUpdatedAt);
+      const remoteIsNewer = remoteDate instanceof Date
+        && !Number.isNaN(remoteDate.getTime())
+        && remoteDate > localDate;
+
+      if (remoteIsNewer) {
+        console.log('Backup bloccato: remoto più recente');
+        return;
+      }
+    }
 
     const res = await fetch(BACKUP_URL, {
       method: 'POST',
@@ -432,7 +450,7 @@ function render(ddts) {
 
       console.log('DDT ELIMINATO DEFINITIVAMENTE');
 
-      await backupToDrive();
+      await backupToDrive({ skipRemoteSafetyCheck: true });
       await syncDDT();
     });
 
@@ -489,7 +507,7 @@ form.addEventListener('submit', async (event) => {
 
   saveDDTs(current);
   console.log('SALVATAGGIO DDT');
-  backupToDrive();
+  backupToDrive({ skipRemoteSafetyCheck: true });
   syncDDT();
   resetFormState();
   render(current.sort((a, b) => {
