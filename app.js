@@ -14,10 +14,8 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
-const scannerModal = document.getElementById('scanner-modal');
-const scannerContainer = document.getElementById('scanner');
-const scannerCloseButton = document.getElementById('scanner-close');
-let activeHtml5QrCode = null;
+const ocrInput = document.getElementById('ocr-input');
+let activeOcrRow = null;
 
 
 const BACKUP_URL = 'https://script.google.com/macros/s/AKfycbzbF4v2-01P9AvsUWPhJFrdow5mPljOCiZYpZr_KrPIcB1qZmtzP53mTiFvI_ucw8g/exec';
@@ -85,7 +83,7 @@ function renderRow(riga = createEmptyRiga()) {
 
     <div class="field-with-actions">
       <input type="text" class="lotto" value="${riga.lotto}" placeholder="Lotto" />
-      <button type="button" class="scan-btn secondary">📷 Scan</button>
+      <button type="button" class="ocr-scan secondary">📷 Leggi REF e LOT da foto</button>
       <small class="error-message"></small>
     </div>
 
@@ -103,8 +101,8 @@ function renderRow(riga = createEmptyRiga()) {
     }
   });
 
-  row.querySelector('.scan-btn').addEventListener('click', () => {
-    startScanner(row);
+  row.querySelector('.ocr-scan').addEventListener('click', () => {
+    startOcrForRow(row);
   });
 
   row.querySelectorAll('input').forEach((input) => {
@@ -317,90 +315,71 @@ async function syncDDT() {
   }
 }
 
-async function stopScanner() {
-  if (activeHtml5QrCode) {
-    try {
-      await activeHtml5QrCode.stop();
-    } catch (error) {
-      console.warn('Stop scanner warning:', error);
-    }
-    try {
-      await activeHtml5QrCode.clear();
-    } catch (error) {
-      console.warn('Clear scanner warning:', error);
-    }
-    activeHtml5QrCode = null;
-  }
-
-  if (scannerModal) scannerModal.style.display = 'none';
-  if (scannerContainer) scannerContainer.innerHTML = '';
-  document.body.classList.remove('scanner-open');
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = typeof reader.result === 'string' ? reader.result : '';
+      const base64 = raw.includes(',') ? raw.split(',')[1] : raw;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Impossibile leggere la foto.'));
+    reader.readAsDataURL(file);
+  });
 }
 
-function startScanner(row) {
-  if (!window.isSecureContext) {
-    alert('La scansione richiede HTTPS (o localhost).');
+function startOcrForRow(row) {
+  if (!ocrInput) {
+    alert('Input foto non disponibile.');
     return;
   }
 
-  if (typeof Html5Qrcode === 'undefined') {
-    alert('Scanner non disponibile.');
-    return;
-  }
+  activeOcrRow = row;
+  ocrInput.value = '';
+  ocrInput.click();
+}
 
-  if (!scannerModal || !scannerContainer) {
-    alert('Container scanner non disponibile.');
-    return;
-  }
+async function handleOcrFileChange(event) {
+  const file = event.target.files?.[0];
+  const row = activeOcrRow;
 
-  if (activeHtml5QrCode) {
-    void stopScanner();
-  }
+  if (!file || !row) return;
 
-  scannerModal.style.display = 'block';
-  document.body.classList.add('scanner-open');
-  activeHtml5QrCode = new Html5Qrcode('scanner');
-
-  Html5Qrcode.getCameras()
-    .then((devices) => {
-      if (!devices.length) {
-        alert('Nessuna camera trovata');
-        return stopScanner();
-      }
-
-      const preferredCamera = devices.find((device) => /back|rear|environment/i.test(device.label || ''));
-      const cameraId = (preferredCamera || devices[0]).id;
-
-      return activeHtml5QrCode.start(
-        cameraId,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          const codiceInput = row.querySelector('.codice_articolo');
-          const lottoInput = row.querySelector('.lotto');
-
-          const parts = decodedText.split(/[\s|,;]/).filter(Boolean);
-
-          codiceInput.value = parts[0] || '';
-          lottoInput.value = parts[1] || '';
-
-          clearFieldError(codiceInput);
-          clearFieldError(lottoInput);
-
-          void stopScanner();
-        },
-        () => {
-          // opzionale
-        },
-      );
-    })
-    .catch((error) => {
-      console.error('Errore scanner:', error);
-      alert('Impossibile avviare la fotocamera. Verifica i permessi.');
-      void stopScanner();
+  try {
+    const imageBase64 = await fileToBase64(file);
+    const response = await fetch('/api/ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64 }),
     });
+
+    if (!response.ok) {
+      throw new Error(`OCR HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    const ref = String(result?.ref || '').trim();
+    const lot = String(result?.lot || '').trim();
+
+    const codiceInput = row.querySelector('.codice_articolo');
+    const lottoInput = row.querySelector('.lotto');
+
+    codiceInput.value = ref;
+    lottoInput.value = lot;
+
+    if (ref) clearFieldError(codiceInput);
+    if (lot) clearFieldError(lottoInput);
+
+    if (!ref || !lot) {
+      alert('REF o LOT non rilevati. Riprovare con foto più vicina.');
+    }
+  } catch (error) {
+    console.error('Errore OCR:', error);
+    alert('Impossibile leggere la foto. Riprovare.');
+  } finally {
+    activeOcrRow = null;
+    if (ocrInput) ocrInput.value = '';
+  }
 }
 
 function render(ddts) {
@@ -532,18 +511,8 @@ printLastButton.addEventListener('click', () => {
 });
 
 
-if (scannerCloseButton) {
-  scannerCloseButton.addEventListener('click', () => {
-    void stopScanner();
-  });
-}
-
-if (scannerModal) {
-  scannerModal.addEventListener('click', (event) => {
-    if (event.target === scannerModal) {
-      void stopScanner();
-    }
-  });
+if (ocrInput) {
+  ocrInput.addEventListener('change', handleOcrFileChange);
 }
 
 [clienteRiga1Input].forEach((input) => {
