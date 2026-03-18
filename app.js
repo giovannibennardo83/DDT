@@ -315,16 +315,51 @@ async function syncDDT() {
   }
 }
 
-function fileToBase64(file) {
+async function fileToBase64(file) {
+
+  const img = new Image();
+  const reader = new FileReader();
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const raw = typeof reader.result === 'string' ? reader.result : '';
-      const base64 = raw.includes(',') ? raw.split(',')[1] : raw;
-      resolve(base64);
+
+    reader.onload = e => {
+      img.src = e.target.result;
     };
-    reader.onerror = () => reject(new Error('Impossibile leggere la foto.'));
+
+    img.onload = () => {
+
+      const canvas = document.createElement("canvas");
+
+      const maxSize = 1200;
+
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height && width > maxSize) {
+        height *= maxSize / width;
+        width = maxSize;
+      } else if (height > maxSize) {
+        width *= maxSize / height;
+        height = maxSize;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const base64 = canvas
+        .toDataURL("image/jpeg", 0.8)
+        .split(",")[1];
+
+      resolve(base64);
+
+    };
+
+    reader.onerror = reject;
     reader.readAsDataURL(file);
+
   });
 }
 
