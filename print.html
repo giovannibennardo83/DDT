@@ -77,6 +77,14 @@
       ].join('\n');
 
       const raw = localStorage.getItem('printDDT');
+      function formatDisplayDate(value) {
+        const input = String(value || '').trim();
+        const match = input.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+        if (!match) return input;
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+      }
+
       if (!raw) {
         document.getElementById('rows').innerHTML = '<tr><td colspan="3">Nessun DDT disponibile.</td></tr>';
       } else {
@@ -85,7 +93,7 @@
         const righe = Array.isArray(ddt.righe) ? ddt.righe : [];
 
         document.getElementById('numero').textContent = ddt.numero || '';
-        document.getElementById('data').textContent = ddt.data || '';
+        document.getElementById('data').textContent = formatDisplayDate(ddt.data);
         document.getElementById('cliente').textContent = [cliente.riga1, cliente.riga2, cliente.riga3].filter(Boolean).join('\n');
         document.getElementById('mittente').textContent = MITTENTE_FISSO;
         document.getElementById('causale').textContent = ddt.causale_trasporto || '';

@@ -50,8 +50,16 @@ function formatRows(righe = []) {
   return righe.map((riga) => `${riga.codice_articolo} | ${riga.lotto} x${riga.quantita}`).join(' · ');
 }
 
+function formatDisplayDate(value) {
+  const input = String(value || '').trim();
+  const match = input.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (!match) return input;
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
 function formatItem(ddt) {
-  return `${ddt.numero || 'Senza numero'} - ${ddt.data} - ${ddt.cliente.riga1} (${formatRows(ddt.righe)})`;
+  return `${ddt.numero || 'Senza numero'} - ${formatDisplayDate(ddt.data)} - ${ddt.cliente.riga1} (${formatRows(ddt.righe)})`;
 }
 
 function setSimpleFieldError(input, message) {
