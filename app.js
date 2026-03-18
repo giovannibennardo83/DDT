@@ -232,47 +232,64 @@ async function backupToDrive() {
 
 async function syncDDT() {
   if (syncInProgress) return;
-
   syncInProgress = true;
 
   try {
-    console.log('SYNC START');
-
+    console.log("SYNC START");
     const localDDT = await getAllDDT();
-    const localCounters = await getCounters();
-    void localCounters;
-
     const res = await fetch(BACKUP_URL + "?t=" + Date.now());
     const remote = await res.json();
     console.log("REMOTE:", remote);
 
-    if (!remote || remote.empty) {
-      console.log('SYNC: nessun dato remoto');
+    // 🔴 CASO 1: DRIVE VUOTO
+    if (!remote || remote.empty || !remote.ddt || remote.ddt.length === 0) {
+      console.log("DRIVE VUOTO → carico dati locali");
+      await backupToDrive();
+      const sorted = localDDT.sort((a,b)=>{
+        const numA = parseInt((a.numero || '').replace(/\D/g,'')) || 0;
+        const numB = parseInt((b.numero || '').replace(/\D/g,'')) || 0;
+        return numB - numA;
+      });
+
+      render(sorted);
       return;
     }
-
+    // 🟢 CASO 2: DRIVE HA DATI
     const remoteDDT = remote.ddt || [];
     console.log("REMOTE DDT:", remoteDDT.length);
     console.log("LOCAL DDT:", localDDT.length);
-    
-    const finalDDT = (remoteDDT || []).sort((a, b) => {
-    const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
-    const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
-    return numB - numA;
+    // rimuove duplicati per numero
+    const unique = {};
+    remoteDDT.forEach(d => {
+      const key = d.numero;
+      if (!unique[key]) {
+        unique[key] = d;
+      } else {
+        if (new Date(d.updatedAt) > new Date(unique[key].updatedAt)) {
+          unique[key] = d;
+        }
+      }
+
     });
-  
+    const cleanedDDT = Object.values(unique);
+    // ordina
+    const finalDDT = cleanedDDT.sort((a,b)=>{
+      const numA = parseInt((a.numero || '').replace(/\D/g,'')) || 0;
+      const numB = parseInt((b.numero || '').replace(/\D/g,'')) || 0;
+      return numB - numA;
+    });
+    // salva locale
     await saveAllDDT(finalDDT);
+    // aggiorna contatori
     await updateCountersFromDDT(finalDDT);
     render(finalDDT);
-
-    console.log('SYNC OK');
-  } catch (err) {
-    console.error('SYNC ERROR', err);
+    console.log("SYNC OK");
+  } catch(err) {
+    console.error("SYNC ERROR", err);
   } finally {
     syncInProgress = false;
   }
 }
-
 
 async function stopScanner() {
   if (activeHtml5QrCode) {
