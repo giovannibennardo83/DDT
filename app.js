@@ -350,7 +350,6 @@ async function handleOcrFileChange(event) {
     const imageBase64 = await fileToBase64(file);
     const response = await fetch(OCR_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64 }),
     });
 
