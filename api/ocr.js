@@ -4,7 +4,15 @@ export default async function handler(req, res) {
 
   try {
 
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
     const { imageBase64 } = req.body;
+
+    if (!imageBase64) {
+      return res.status(400).json({ error: "No image provided" });
+    }
 
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
@@ -45,13 +53,13 @@ Rispondi SOLO JSON:
 
     const parsed = JSON.parse(text);
 
-    res.status(200).json(parsed);
+    return res.status(200).json(parsed);
 
   } catch (err) {
 
-    console.error(err);
+    console.error("OCR ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       ref: "",
       lot: ""
     });
