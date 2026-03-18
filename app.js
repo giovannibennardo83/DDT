@@ -19,7 +19,7 @@ let activeOcrRow = null;
 
 
 const BACKUP_URL = 'https://script.google.com/macros/s/AKfycbzbF4v2-01P9AvsUWPhJFrdow5mPljOCiZYpZr_KrPIcB1qZmtzP53mTiFvI_ucw8g/exec';
-const OCR_URL = 'https://ddt-chi.vercel.app/api/ocr
+const OCR_URL = 'https://ddt-chi.vercel.app/api/ocr';
 const numeroInput = document.getElementById('numero');
 const dataInput = document.getElementById('data');
 const clienteRiga1Input = document.getElementById('cliente_riga1');
