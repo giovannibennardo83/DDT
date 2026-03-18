@@ -348,10 +348,7 @@ async function handleOcrFileChange(event) {
 
   try {
     const imageBase64 = await fileToBase64(file);
-    const response = await fetch(OCR_URL, {
-      method: 'POST',
-      body: JSON.stringify({ imageBase64 }),
-    });
+    const response = await fetch(OCR_URL + "?imageBase64=" + encodeURIComponent(imageBase64));
 
     if (!response.ok) {
       throw new Error(`OCR HTTP ${response.status}`);
