@@ -19,6 +19,7 @@ let activeOcrRow = null;
 
 
 const BACKUP_URL = 'https://script.google.com/macros/s/AKfycbzbF4v2-01P9AvsUWPhJFrdow5mPljOCiZYpZr_KrPIcB1qZmtzP53mTiFvI_ucw8g/exec';
+const OCR_URL = 'https://script.google.com/macros/s/AKfycbyiibZkAgoBF_4UZzfOv6uu6hVXb4IzZWCvab07UXeBSSUCCitaX3Q6ncX3QrjHyoy6/exec';
 
 const numeroInput = document.getElementById('numero');
 const dataInput = document.getElementById('data');
@@ -347,7 +348,7 @@ async function handleOcrFileChange(event) {
 
   try {
     const imageBase64 = await fileToBase64(file);
-    const response = await fetch('/api/ocr', {
+    const response = await fetch(OCR_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64 }),
