@@ -15,6 +15,8 @@ const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
 const ocrInput = document.getElementById('ocr-input');
+const ocrScaricoButton = document.getElementById('ocr-scarico-btn');
+const ocrScaricoInput = document.getElementById('ocr-scarico-input');
 let activeOcrRow = null;
 
 
@@ -374,6 +376,78 @@ function startOcrForRow(row) {
   ocrInput.click();
 }
 
+function startOcrScaricoDocumento() {
+  if (!ocrScaricoInput) {
+    alert('Input documento non disponibile.');
+    return;
+  }
+
+  ocrScaricoInput.value = '';
+  ocrScaricoInput.click();
+}
+
+function normalizeOcrDate(value) {
+  const input = String(value || '').trim();
+  if (!input) return '';
+
+  const isoMatch = input.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  const itMatch = input.match(/^(\d{2})[./-](\d{2})[./-](\d{4})$/);
+  if (itMatch) {
+    return `${itMatch[3]}-${itMatch[2]}-${itMatch[1]}`;
+  }
+
+  return '';
+}
+
+function normalizeScaricoRighe(righe = []) {
+  const grouped = new Map();
+
+  righe.forEach((riga) => {
+    const codice = String(riga?.codice_articolo ?? '').trim();
+    if (!codice) return;
+
+    const lotto = String(riga?.lotto ?? '').trim();
+    const quantita = Math.max(1, Number(riga?.quantita) || 1);
+    const key = `${codice}__${lotto}`;
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.quantita += quantita;
+      return;
+    }
+
+    grouped.set(key, {
+      codice_articolo: codice,
+      lotto,
+      quantita,
+    });
+  });
+
+  return [...grouped.values()];
+}
+
+function applyScaricoDataToForm(result) {
+  const cliente = String(result?.cliente ?? '').trim();
+  const data = normalizeOcrDate(result?.data);
+  const inizialiPaziente = String(result?.iniziali_paziente ?? '').trim();
+  const cartellaClinica = String(result?.cartella_clinica ?? '').trim();
+  const righe = normalizeScaricoRighe(result?.righe || []);
+
+  if (cliente) clienteRiga1Input.value = cliente;
+  if (data) dataInput.value = data;
+  if (inizialiPaziente) inizialiInput.value = inizialiPaziente;
+  if (cartellaClinica) cartellaInput.value = cartellaClinica;
+
+  if (righe.length) {
+    righeContainer.innerHTML = '';
+    righe.forEach((riga) => renderRow(riga));
+  }
+}
+
 async function handleOcrFileChange(event) {
   const file = event.target.files?.[0];
   const row = activeOcrRow;
@@ -416,6 +490,37 @@ async function handleOcrFileChange(event) {
   } finally {
     activeOcrRow = null;
     if (ocrInput) ocrInput.value = '';
+  }
+}
+
+async function handleOcrScaricoFileChange(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const imageBase64 = await fileToBase64(file);
+    const response = await fetch(OCR_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        imageBase64,
+        mode: 'document',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OCR HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    applyScaricoDataToForm(result);
+  } catch (error) {
+    console.error('Errore OCR scarico documento:', error);
+    alert('Documento non leggibile');
+  } finally {
+    if (ocrScaricoInput) ocrScaricoInput.value = '';
   }
 }
 
@@ -550,6 +655,14 @@ printLastButton.addEventListener('click', () => {
 
 if (ocrInput) {
   ocrInput.addEventListener('change', handleOcrFileChange);
+}
+
+if (ocrScaricoButton) {
+  ocrScaricoButton.addEventListener('click', startOcrScaricoDocumento);
+}
+
+if (ocrScaricoInput) {
+  ocrScaricoInput.addEventListener('change', handleOcrScaricoFileChange);
 }
 
 [clienteRiga1Input].forEach((input) => {
