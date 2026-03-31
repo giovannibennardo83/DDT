@@ -62,9 +62,17 @@
           <strong>Quantità</strong>
         </div>
         <div id="righe-container" class="righe-grid" role="table" aria-label="Righe DDT"></div>
+        <button type="button" id="ocr-scarico-btn" class="secondary">📄 Acquisisci scarico AI</button>
         <input
           type="file"
           id="ocr-input"
+          accept="image/*"
+          capture="environment"
+          hidden
+        />
+        <input
+          type="file"
+          id="ocr-scarico-input"
           accept="image/*"
           capture="environment"
           hidden
