@@ -104,6 +104,26 @@ try {
   console.error("JSON PARSE ERROR:", clean);
   throw new Error("Invalid JSON from OCR");
 }
+if (isDocumentMode) {
+
+  // Normalizza data (DD/MM/YYYY → YYYY-MM-DD)
+  if (parsed.data && parsed.data.includes("/")) {
+    const [day, month, year] = parsed.data.split("/");
+    parsed.data = `${year}-${month}-${day}`;
+  }
+
+  // Sicurezza campi
+  parsed.cliente = parsed.cliente || "";
+  parsed.iniziali_paziente = parsed.iniziali_paziente || "";
+  parsed.cartella_clinica = parsed.cartella_clinica || "";
+  parsed.righe = Array.isArray(parsed.righe) ? parsed.righe : [];
+
+  parsed.righe = parsed.righe.map(r => ({
+    codice_articolo: String(r.codice_articolo || "").trim(),
+    lotto: String(r.lotto || "").trim(),
+    quantita: 1
+  }));
+}
     return res.status(200).json(parsed);
 
   } catch (err) {
