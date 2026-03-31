@@ -37,7 +37,7 @@ Regole OCR:
 - Estrai intestazione ospedale/struttura come "cliente"
 - Estrai data documento in formato YYYY-MM-DD
 - Estrai iniziali paziente come "iniziali_paziente"
-- Estrai numero cartella clinica (C/C) come "cartella_clinica"
+- Estrai numero cartella clinica (CC o SDO) come "cartella_clinica"
 - Estrai tutte le etichette dispositivi come righe con REF e LOT
 - Ignora UDI, barcode, EDI
 - Se lotto manca, usa stringa vuota
