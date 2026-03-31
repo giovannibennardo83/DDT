@@ -89,16 +89,21 @@ Rispondi SOLO JSON:
       ]
     });
 
-    const text = response.output[0].content[0].text;
-  
-    const clean = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    const outputText = response.output_text;
 
-const parsed = JSON.parse(clean);
-    
+const clean = outputText
+  .replace(/```json/g, "")
+  .replace(/```/g, "")
+  .trim();
 
+let parsed;
+
+try {
+  parsed = JSON.parse(clean);
+} catch (e) {
+  console.error("JSON PARSE ERROR:", clean);
+  throw new Error("Invalid JSON from OCR");
+}
     return res.status(200).json(parsed);
 
   } catch (err) {
