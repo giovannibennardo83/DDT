@@ -59,17 +59,52 @@ Rispondi SOLO JSON valido in questo formato:
 }
 `
       : `
-Analizza questa etichetta di protesi ortopedica.
+Analizza questa etichetta di protesi ortopedica tramite OCR.
 
-Trova:
-REF = codice articolo
-LOT = numero lotto
+Obiettivo: estrarre SOLO questi due campi:
+- REF (codice articolo)
+- LOT (numero di lotto)
 
-Rispondi SOLO JSON:
+Regole IMPORTANTI:
+
+1. REF:
+- È preceduto da "REF", "Ref", "Codice", "Code"
+- NON è:
+  - UDI
+  - GTIN
+  - SN / Serial Number
+  - EDI
+- Di solito è alfanumerico (es. ABC123, 04.001.234)
+- Se ci sono più codici, scegli quello più vicino alla dicitura REF
+
+2. LOT:
+- È preceduto da "LOT", "Lot", "Lotto"
+- Attenzione a errori OCR:
+  - "L0T" = LOT
+  - "LOI" = LOT
+- NON è una data
+- NON è un serial number
+
+3. Normalizzazione:
+- Rimuovi spazi inutili
+- Mantieni maiuscole
+- Non inventare valori
+
+4. Se un campo NON è presente:
+- usa stringa vuota ""
+
+5. Ignora completamente:
+- barcode
+- UDI
+- GS1
+- QR code
+- numeri molto lunghi tipici di GTIN
+
+Rispondi SOLO JSON valido:
 
 {
- "ref": "...",
- "lot": "..."
+  "ref": "...",
+  "lot": "..."
 }
 `;
 
