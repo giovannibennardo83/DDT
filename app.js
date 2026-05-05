@@ -256,6 +256,39 @@ async function backupToDrive(options = {}) {
   }
 }
 
+
+function mergeDDTLists(localDDT = [], remoteDDT = []) {
+  const mergedById = new Map();
+
+  const consider = (item) => {
+    if (!item) return;
+    const key = item.id || item.numero;
+    if (!key) return;
+
+    const existing = mergedById.get(key);
+    if (!existing) {
+      mergedById.set(key, item);
+      return;
+    }
+
+    const itemUpdatedAt = new Date(item.updatedAt || 0).getTime() || 0;
+    const existingUpdatedAt = new Date(existing.updatedAt || 0).getTime() || 0;
+
+    if (itemUpdatedAt >= existingUpdatedAt) {
+      mergedById.set(key, item);
+    }
+  };
+
+  localDDT.forEach(consider);
+  remoteDDT.forEach(consider);
+
+  return [...mergedById.values()].sort((a, b) => {
+    const numA = parseInt((a.numero || '').replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt((b.numero || '').replace(/\D/g, ''), 10) || 0;
+    return numB - numA;
+  });
+}
+
 async function syncDDT() {
   if (syncInProgress) return;
   syncInProgress = true;
@@ -267,43 +300,12 @@ async function syncDDT() {
     const remote = await res.json();
     console.log("REMOTE:", remote);
 
-    // 🔴 CASO 1: DRIVE VUOTO
-    if (!remote || remote.empty || !remote.ddt || remote.ddt.length === 0) {
-      console.log("DRIVE VUOTO → carico dati locali");
-      await backupToDrive();
-      const sorted = localDDT.sort((a,b)=>{
-        const numA = parseInt((a.numero || '').replace(/\D/g,'')) || 0;
-        const numB = parseInt((b.numero || '').replace(/\D/g,'')) || 0;
-        return numB - numA;
-      });
-
-      render(sorted);
-      return;
-    }
-    // 🟢 CASO 2: DRIVE HA DATI
-    const remoteDDT = remote.ddt || [];
+    const remoteDDT = Array.isArray(remote?.ddt) ? remote.ddt : [];
     console.log("REMOTE DDT:", remoteDDT.length);
     console.log("LOCAL DDT:", localDDT.length);
-    // rimuove duplicati per numero
-    const unique = {};
-    remoteDDT.forEach(d => {
-      const key = d.numero;
-      if (!unique[key]) {
-        unique[key] = d;
-      } else {
-        if (new Date(d.updatedAt) > new Date(unique[key].updatedAt)) {
-          unique[key] = d;
-        }
-      }
 
-    });
-    const cleanedDDT = Object.values(unique);
-    // ordina
-    const finalDDT = cleanedDDT.sort((a,b)=>{
-      const numA = parseInt((a.numero || '').replace(/\D/g,'')) || 0;
-      const numB = parseInt((b.numero || '').replace(/\D/g,'')) || 0;
-      return numB - numA;
-    });
+    const finalDDT = mergeDDTLists(localDDT, remoteDDT);
+
     // salva locale
     await saveAllDDT(finalDDT);
     // aggiorna contatori
@@ -628,8 +630,8 @@ form.addEventListener('submit', async (event) => {
 
   saveDDTs(current);
   console.log('SALVATAGGIO DDT');
-  backupToDrive({ skipRemoteSafetyCheck: true });
-  syncDDT();
+  await backupToDrive({ skipRemoteSafetyCheck: true });
+  await syncDDT();
   resetFormState();
   render(current.sort((a, b) => {
   const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
