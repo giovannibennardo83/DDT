@@ -46,7 +46,7 @@ function normalizeDDTStorage(ddt) {
         }]
       : [];
 
-  return {
+  const normalized = {
     id: String(ddt?.id ?? generateDDTId()),
     numero: String(ddt?.numero ?? '').trim(),
     data: String(ddt?.data ?? ''),
@@ -55,9 +55,17 @@ function normalizeDDTStorage(ddt) {
     iniziali_paziente: String(ddt?.iniziali_paziente ?? '').trim(),
     cartella_clinica: String(ddt?.cartella_clinica ?? '').trim(),
     righe: sourceRows.map(normalizeRigaStorage),
-    createdAt: ddt?.createdAt || new Date().toISOString(),
-    updatedAt: ddt?.updatedAt || new Date().toISOString(),
   };
+
+  if (ddt?.createdAt) {
+    normalized.createdAt = ddt.createdAt;
+  }
+
+  if (ddt?.updatedAt) {
+    normalized.updatedAt = ddt.updatedAt;
+  }
+
+  return normalized;
 }
 
 function getDDTs() {
@@ -66,9 +74,7 @@ function getDDTs() {
 
   try {
     const parsed = JSON.parse(raw);
-    const normalized = Array.isArray(parsed) ? parsed.map(normalizeDDTStorage) : [];
-    localStorage.setItem(DDT_STORAGE_KEY, JSON.stringify(normalized));
-    return normalized;
+    return Array.isArray(parsed) ? parsed.map(normalizeDDTStorage) : [];
   } catch {
     return [];
   }

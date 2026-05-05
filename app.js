@@ -244,18 +244,21 @@ async function backupToDrive(options = {}) {
       }
     }
 
-    const res = await fetch(BACKUP_URL, {
+    fetch(BACKUP_URL, {
       method: 'POST',
       body: JSON.stringify(data),
-    });
-
-    const json = await res.json();
-    console.log('BACKUP OK', json);
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        console.log('BACKUP OK', json);
+      })
+      .catch((err) => {
+        console.error('BACKUP ERROR', err);
+      });
   } catch (err) {
     console.error('BACKUP ERROR', err);
   }
 }
-
 
 function mergeDDTLists(localDDT = [], remoteDDT = []) {
   const mergedById = new Map();
@@ -290,6 +293,7 @@ function mergeDDTLists(localDDT = [], remoteDDT = []) {
 }
 
 async function syncDDT() {
+  if (!navigator.onLine) return;
   if (syncInProgress) return;
   syncInProgress = true;
 
@@ -573,8 +577,7 @@ function render(ddts) {
 
       console.log('DDT ELIMINATO DEFINITIVAMENTE');
 
-      await backupToDrive({ skipRemoteSafetyCheck: true });
-      await syncDDT();
+      backupToDrive({ skipRemoteSafetyCheck: true });
     });
 
     buttons.append(editButton, printButton, deleteButton);
@@ -630,8 +633,7 @@ form.addEventListener('submit', async (event) => {
 
   saveDDTs(current);
   console.log('SALVATAGGIO DDT');
-  await backupToDrive({ skipRemoteSafetyCheck: true });
-  await syncDDT();
+  backupToDrive({ skipRemoteSafetyCheck: true });
   resetFormState();
   render(current.sort((a, b) => {
   const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
