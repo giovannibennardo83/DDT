@@ -113,9 +113,13 @@ function renderRow(riga = createEmptyRiga()) {
 
     <div class="field-with-actions">
       <input type="text" class="lotto" value="${riga.lotto}" placeholder="Lotto" />
-      <div class="ocr-actions">
+      <div class="ocr-row-tools">
+        <p class="ocr-row-title">OCR prodotto</p>
+        <p class="ocr-row-subtitle">Scansiona un singolo bollino</p>
+      <div class="ocr-actions ocr-actions-row">
         <button type="button" class="ocr-scan-camera secondary">📷 Scatta foto</button>
         <button type="button" class="ocr-scan-gallery secondary">🖼️ Carica da galleria</button>
+      </div>
       </div>
       <small class="error-message"></small>
     </div>
