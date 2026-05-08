@@ -76,10 +76,34 @@ input, textarea {
 .item-buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
 .save-status {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
   margin: 0;
-  min-height: 1.1rem;
-  font-size: 0.9rem;
-  color: #0f766e;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 20%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 999;
+  max-width: calc(100vw - 2rem);
+}
+
+.save-status.is-success {
+  background: #16a34a;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.save-status.is-error {
+  background: #dc2626;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 button {
@@ -191,4 +215,12 @@ li {
 .description-wrap input { min-width: 220px; }
 @media (max-width: 720px) {
   .description-wrap input { min-width: 0; }
+}
+
+@media (max-width: 720px) {
+  .save-status {
+    bottom: 1rem;
+    width: calc(100vw - 1.5rem);
+    text-align: center;
+  }
 }

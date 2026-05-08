@@ -41,6 +41,7 @@ const saveStatus = document.getElementById('save-status');
 let editingIndex = null;
 let syncInProgress = false;
 let isSaving = false;
+let saveStatusTimeout = null;
 
 function setSavingState(saving) {
   isSaving = saving;
@@ -54,6 +55,26 @@ function setSavingState(saving) {
   if (saveStatus) {
     saveStatus.textContent = saving ? 'Sto salvando...' : '';
   }
+}
+
+
+function showSaveToast(message, type = 'success') {
+  if (!saveStatus) return;
+
+  if (saveStatusTimeout) {
+    clearTimeout(saveStatusTimeout);
+    saveStatusTimeout = null;
+  }
+
+  saveStatus.textContent = message;
+  saveStatus.classList.remove('is-success', 'is-error');
+  saveStatus.classList.add(type === 'error' ? 'is-error' : 'is-success');
+
+  saveStatusTimeout = setTimeout(() => {
+    saveStatus.textContent = '';
+    saveStatus.classList.remove('is-success', 'is-error');
+    saveStatusTimeout = null;
+  }, 2500);
 }
 
 function createEmptyRiga() {
@@ -708,17 +729,10 @@ form.addEventListener('submit', async (event) => {
       return numB - numA;
     }));
 
-    if (saveStatus) {
-      saveStatus.textContent = 'DDT salvato con successo';
-      setTimeout(() => {
-        if (!isSaving && saveStatus.textContent === 'DDT salvato con successo') {
-          saveStatus.textContent = '';
-        }
-      }, 2000);
-    }
+    showSaveToast('DDT salvato con successo', 'success');
   } catch (error) {
     console.error('Errore durante il salvataggio DDT:', error);
-    alert('Errore durante il salvataggio. Riprova.');
+    showSaveToast('Errore durante il salvataggio', 'error');
   } finally {
     setSavingState(false);
   }
