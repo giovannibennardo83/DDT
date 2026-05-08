@@ -602,6 +602,8 @@ function render(ddts) {
     deleteButton.textContent = 'Elimina';
     deleteButton.className = 'danger';
     deleteButton.addEventListener('click', async () => {
+      if (!confirm("Sei sicuro di voler eliminare questo DDT? Questa operazione non è reversibile.")) return;
+
       const updated = getDDTs();
       if (index < 0 || index >= updated.length) return;
 
