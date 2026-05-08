@@ -34,8 +34,9 @@
         <table>
           <thead>
             <tr>
-              <th>Codice articolo</th>
-              <th>Lotto</th>
+              <th>Ref</th>
+              <th>Descrizione</th>
+              <th>Lot</th>
               <th>Quantità</th>
             </tr>
           </thead>
@@ -86,7 +87,7 @@
       }
 
       if (!raw) {
-        document.getElementById('rows').innerHTML = '<tr><td colspan="3">Nessun DDT disponibile.</td></tr>';
+        document.getElementById('rows').innerHTML = '<tr><td colspan="4">Nessun DDT disponibile.</td></tr>';
       } else {
         const ddt = JSON.parse(raw);
         const cliente = ddt.cliente || {};
@@ -102,18 +103,19 @@
 
         const normalized = righe.map((r) => ({
           codice_articolo: String(r.codice_articolo || '').trim(),
+          description: String(r.description || '').trim(),
           lotto: String(r.lotto || '').trim(),
           quantita: Math.max(1, Number(r.quantita) || 1)
         }));
 
         while (normalized.length < 12) {
-          normalized.push({ codice_articolo: '', lotto: '', quantita: '' });
+          normalized.push({ codice_articolo: '', description: '', lotto: '', quantita: '' });
         }
 
         const rowsNode = document.getElementById('rows');
         normalized.slice(0, 12).forEach((riga) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${riga.codice_articolo}</td><td>${riga.lotto}</td><td class="qty">${riga.quantita}</td>`;
+          tr.innerHTML = `<td>${riga.codice_articolo}</td><td class="description">${riga.description}</td><td>${riga.lotto}</td><td class="qty">${riga.quantita}</td>`;
           rowsNode.appendChild(tr);
         });
 
