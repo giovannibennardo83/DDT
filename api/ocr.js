@@ -38,8 +38,11 @@ Regole OCR:
 - Estrai data documento in formato YYYY-MM-DD
 - Estrai iniziali paziente come "iniziali_paziente"
 - Estrai numero cartella clinica (CC o SDO) come "cartella_clinica"
-- Estrai tutte le etichette dispositivi come righe con REF e LOT
-- Ignora UDI, barcode, EDI
+- Estrai tutte le etichette dispositivi come righe con REF, LOT e description
+- Description: breve (2-4 parole), scegli la parte più importante e leggibile
+- Se presente una misura utile (es. 71mm, 60mm, 10mm), includila nella description
+- Ignora UDI, barcode, GTIN, EDI, indirizzi, materiali e codici lunghi
+- Se stesso REF + LOT compare più volte, NON duplicare: somma le quantità
 - Se lotto manca, usa stringa vuota
 - Gestisci anche foto inclinate
 
@@ -52,6 +55,7 @@ Rispondi SOLO JSON valido in questo formato:
   "righe": [
     {
       "codice_articolo": "REF",
+      "description": "Breve descrizione",
       "lotto": "LOT",
       "quantita": 1
     }
@@ -61,9 +65,10 @@ Rispondi SOLO JSON valido in questo formato:
       : `
 Analizza questa etichetta di protesi ortopedica tramite OCR.
 
-Obiettivo: estrarre SOLO questi due campi:
+Obiettivo: estrarre SOLO questi campi:
 - REF (codice articolo)
 - LOT (numero di lotto)
+- Description (descrizione prodotto breve)
 
 Regole IMPORTANTI:
 
@@ -85,12 +90,19 @@ Regole IMPORTANTI:
 - NON è una data
 - NON è un serial number
 
-3. Normalizzazione:
-- Rimuovi spazi inutili
-- Mantieni maiuscole
+3. Description:
+- Breve (2-4 parole)
+- Scegli la parte più importante e leggibile
+- Aggiungi misura se presente (es: 71mm, 60mm, 10mm)
+- Ignora UDI, barcode, GTIN, codici lunghi, indirizzi, materiali
+
+4. Normalizzazione:
+- Applica trim() a tutti i campi
+- REF e LOT in MAIUSCOLO
+- Description pulita e leggibile
 - Non inventare valori
 
-4. Se un campo NON è presente:
+5. Se un campo NON è presente:
 - usa stringa vuota ""
 
 5. Ignora completamente:
@@ -104,7 +116,8 @@ Rispondi SOLO JSON valido:
 
 {
   "ref": "...",
-  "lot": "..."
+  "lot": "...",
+  "description": "..."
 }
 `;
 
@@ -154,10 +167,34 @@ if (isDocumentMode) {
   parsed.righe = Array.isArray(parsed.righe) ? parsed.righe : [];
 
   parsed.righe = parsed.righe.map(r => ({
-    codice_articolo: String(r.codice_articolo || "").trim(),
-    lotto: String(r.lotto || "").trim(),
-    quantita: 1
+    codice_articolo: String(r.codice_articolo || "").trim().toUpperCase(),
+    description: String(r.description || "").trim(),
+    lotto: String(r.lotto || "").trim().toUpperCase(),
+    quantita: Number(r.quantita) || 1
   }));
+
+  const map = {};
+
+  parsed.righe.forEach(r => {
+    const key = r.codice_articolo + "|" + r.lotto;
+
+    if (!map[key]) {
+      map[key] = {
+        codice_articolo: r.codice_articolo,
+        description: r.description,
+        lotto: r.lotto,
+        quantita: Number(r.quantita) || 1
+      };
+    } else {
+      map[key].quantita += Number(r.quantita) || 1;
+    }
+  });
+
+  parsed.righe = Object.values(map);
+} else {
+  parsed.ref = String(parsed.ref || "").trim().toUpperCase();
+  parsed.lot = String(parsed.lot || "").trim().toUpperCase();
+  parsed.description = String(parsed.description || "").trim();
 }
     return res.status(200).json(parsed);
 
@@ -179,6 +216,7 @@ if (isDocumentMode) {
     return res.status(500).json({
       ref: "",
       lot: "",
+      description: "",
     });
 
   }
