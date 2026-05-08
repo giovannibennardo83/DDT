@@ -63,9 +63,13 @@
           <strong>Quantità</strong>
         </div>
         <div id="righe-container" class="righe-grid" role="table" aria-label="Righe DDT"></div>
-        <div class="ocr-actions">
-          <button type="button" id="ocr-scarico-btn" class="secondary">📷 Scatta foto</button>
-          <button type="button" id="ocr-scarico-gallery-btn" class="secondary">🖼️ Carica da galleria</button>
+        <div class="ocr-document-card" aria-label="OCR documento completo">
+          <h4 class="ocr-title">OCR documento (scarico sala operatoria)</h4>
+          <p class="ocr-subtitle">Scansiona tutto il foglio per compilare automaticamente il DDT</p>
+          <div class="ocr-actions ocr-actions-document">
+            <button type="button" id="ocr-scarico-btn" class="secondary">📷 Scatta foto documento</button>
+            <button type="button" id="ocr-scarico-gallery-btn" class="secondary">🖼️ Carica documento</button>
+          </div>
         </div>
         <p id="ocr-status" class="ocr-status" aria-live="polite"></p>
         <img id="ocr-preview" class="ocr-preview" alt="Anteprima immagine compressa per OCR" hidden />
