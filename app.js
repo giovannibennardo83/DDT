@@ -35,9 +35,26 @@ const clienteRiga3Input = document.getElementById('cliente_riga3');
 const causaleInput = document.getElementById('causale_trasporto');
 const inizialiInput = document.getElementById('iniziali_paziente');
 const cartellaInput = document.getElementById('cartella_clinica');
+const saveButton = document.getElementById('save-ddt-btn');
+const saveStatus = document.getElementById('save-status');
 
 let editingIndex = null;
 let syncInProgress = false;
+let isSaving = false;
+
+function setSavingState(saving) {
+  isSaving = saving;
+  if (!saveButton) return;
+
+  saveButton.disabled = saving;
+  saveButton.innerHTML = saving
+    ? '<span class="save-spinner" aria-hidden="true"></span>Sto salvando...'
+    : 'Salva DDT';
+
+  if (saveStatus) {
+    saveStatus.textContent = saving ? 'Sto salvando...' : '';
+  }
+}
 
 function createEmptyRiga() {
   return { codice_articolo: '', description: '', lotto: '', quantita: 1 };
@@ -630,6 +647,7 @@ function render(ddts) {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (isSaving) return;
 
   clearSimpleFieldError(clienteRiga1Input);
 
@@ -643,45 +661,63 @@ form.addEventListener('submit', async (event) => {
 
   if (!formValid) return;
 
-  const current = getDDTs();
-  const existing = editingIndex === null ? null : current[editingIndex];
+  setSavingState(true);
 
-  const ddt = {
-    id: existing?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ddt-${Date.now()}`),
-    numero: existing?.numero || '',
-    data: dataInput.value,
-    cliente: {
-      riga1: clienteRiga1Input.value.trim(),
-      riga2: clienteRiga2Input.value.trim(),
-      riga3: clienteRiga3Input.value.trim(),
-    },
-    causale_trasporto: causaleInput.value.trim(),
-    iniziali_paziente: inizialiInput.value.trim(),
-    cartella_clinica: cartellaInput.value.trim(),
-    righe,
-    createdAt: existing?.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const current = getDDTs();
+    const existing = editingIndex === null ? null : current[editingIndex];
 
-  if (!ddt.numero) {
-    ddt.numero = await getNextDDTNumber(ddt.data);
+    const ddt = {
+      id: existing?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ddt-${Date.now()}`),
+      numero: existing?.numero || '',
+      data: dataInput.value,
+      cliente: {
+        riga1: clienteRiga1Input.value.trim(),
+        riga2: clienteRiga2Input.value.trim(),
+        riga3: clienteRiga3Input.value.trim(),
+      },
+      causale_trasporto: causaleInput.value.trim(),
+      iniziali_paziente: inizialiInput.value.trim(),
+      cartella_clinica: cartellaInput.value.trim(),
+      righe,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (!ddt.numero) {
+      ddt.numero = await getNextDDTNumber(ddt.data);
+    }
+
+    if (editingIndex === null) {
+      current.unshift(ddt);
+    } else {
+      current[editingIndex] = ddt;
+    }
+
+    saveDDTs(current);
+    console.log('SALVATAGGIO DDT');
+    backupToDrive({ skipRemoteSafetyCheck: true });
+    resetFormState();
+    render(current.sort((a, b) => {
+      const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
+      const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
+      return numB - numA;
+    }));
+
+    if (saveStatus) {
+      saveStatus.textContent = 'DDT salvato con successo';
+      setTimeout(() => {
+        if (!isSaving && saveStatus.textContent === 'DDT salvato con successo') {
+          saveStatus.textContent = '';
+        }
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Errore durante il salvataggio DDT:', error);
+    alert('Errore durante il salvataggio. Riprova.');
+  } finally {
+    setSavingState(false);
   }
-
-  if (editingIndex === null) {
-    current.unshift(ddt);
-  } else {
-    current[editingIndex] = ddt;
-  }
-
-  saveDDTs(current);
-  console.log('SALVATAGGIO DDT');
-  backupToDrive({ skipRemoteSafetyCheck: true });
-  resetFormState();
-  render(current.sort((a, b) => {
-  const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
-  const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
-  return numB - numA;
-}));
 });
 
 addRowButton.addEventListener('click', addRiga);
