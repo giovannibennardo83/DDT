@@ -46,7 +46,7 @@ input, textarea {
 .righe-head,
 .riga-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1.4fr 2.2fr 1fr 0.9fr;
   gap: 0.5rem;
 }
 
@@ -122,4 +122,9 @@ li {
   .ocr-scan {
     width: 100%;
   }
+}
+
+.description-wrap input { min-width: 220px; }
+@media (max-width: 720px) {
+  .description-wrap input { min-width: 0; }
 }

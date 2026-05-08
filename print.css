@@ -25,3 +25,5 @@ td.qty { text-align: center; width: 60px; }
   body { background: #e2e8f0; padding: 12px; }
   .sheet { background: #fff; padding: 4mm; }
 }
+
+td.description { white-space: normal; word-break: break-word; }

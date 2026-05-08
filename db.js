@@ -30,6 +30,7 @@ function normalizeCliente(cliente, destinatario = '') {
 function normalizeRigaStorage(riga) {
   return {
     codice_articolo: String(riga?.codice_articolo ?? riga?.descrizione ?? riga?.articolo ?? '').trim(),
+    description: String(riga?.description ?? '').trim(),
     lotto: String(riga?.lotto ?? '').trim(),
     quantita: Math.max(1, Number(riga?.quantita) || 1),
   };

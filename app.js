@@ -35,19 +35,20 @@ let editingIndex = null;
 let syncInProgress = false;
 
 function createEmptyRiga() {
-  return { codice_articolo: '', lotto: '', quantita: 1 };
+  return { codice_articolo: '', description: '', lotto: '', quantita: 1 };
 }
 
 function normalizeRiga(riga) {
   return {
     codice_articolo: String(riga?.codice_articolo ?? riga?.descrizione ?? riga?.articolo ?? '').trim(),
+    description: String(riga?.description ?? '').trim(),
     lotto: String(riga?.lotto ?? '').trim(),
     quantita: Math.max(1, Number(riga?.quantita) || 1),
   };
 }
 
 function formatRows(righe = []) {
-  return righe.map((riga) => `${riga.codice_articolo} | ${riga.lotto} x${riga.quantita}`).join(' · ');
+  return righe.map((riga) => `${riga.codice_articolo}${riga.description ? ' - ' + riga.description : ''} | ${riga.lotto} x${riga.quantita}`).join(' · ');
 }
 
 function formatDisplayDate(value) {
@@ -80,6 +81,11 @@ function renderRow(riga = createEmptyRiga()) {
   row.innerHTML = `
     <div class="field-with-actions">
       <input type="text" class="codice_articolo" value="${riga.codice_articolo}" placeholder="Codice articolo" />
+      <small class="error-message"></small>
+    </div>
+
+    <div class="field-with-actions description-wrap">
+      <input type="text" class="description" value="${riga.description}" placeholder="Descrizione" />
       <small class="error-message"></small>
     </div>
 
@@ -142,11 +148,13 @@ function extractAndValidateRighe() {
 
   rows.forEach((row) => {
     const codice = row.querySelector('.codice_articolo');
+    const description = row.querySelector('.description');
     const lotto = row.querySelector('.lotto');
     const quantita = row.querySelector('.quantita');
 
     const normalized = normalizeRiga({
       codice_articolo: codice.value,
+      description: description.value,
       lotto: lotto.value,
       quantita: quantita.value,
     });
@@ -428,6 +436,7 @@ function normalizeScaricoRighe(righe = []) {
 
     grouped.set(key, {
       codice_articolo: codice,
+      description: String(riga?.description ?? '').trim(),
       lotto,
       quantita,
     });
