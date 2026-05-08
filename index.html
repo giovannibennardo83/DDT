@@ -63,19 +63,36 @@
           <strong>Quantità</strong>
         </div>
         <div id="righe-container" class="righe-grid" role="table" aria-label="Righe DDT"></div>
-        <button type="button" id="ocr-scarico-btn" class="secondary">📄 Acquisisci scarico AI</button>
+        <div class="ocr-actions">
+          <button type="button" id="ocr-scarico-btn" class="secondary">📷 Scatta foto</button>
+          <button type="button" id="ocr-scarico-gallery-btn" class="secondary">🖼️ Carica da galleria</button>
+        </div>
+        <p id="ocr-status" class="ocr-status" aria-live="polite"></p>
+        <img id="ocr-preview" class="ocr-preview" alt="Anteprima immagine compressa per OCR" hidden />
         <input
           type="file"
-          id="ocr-input"
+          id="ocr-input-camera"
           accept="image/*"
           capture="environment"
           hidden
         />
         <input
           type="file"
-          id="ocr-scarico-input"
+          id="ocr-input-gallery"
+          accept="image/*"
+          hidden
+        />
+        <input
+          type="file"
+          id="ocr-scarico-input-camera"
           accept="image/*"
           capture="environment"
+          hidden
+        />
+        <input
+          type="file"
+          id="ocr-scarico-input-gallery"
+          accept="image/*"
           hidden
         />
 
