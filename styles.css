@@ -113,16 +113,15 @@ li {
 }
 
 
-.ocr-scan {
+.ocr-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-top: 0.35rem;
-  width: fit-content;
 }
-
-@media (max-width: 720px) {
-  .ocr-scan {
-    width: 100%;
-  }
-}
+.ocr-status { font-size: 0.9rem; color: #334155; min-height: 1.2rem; margin: 0.4rem 0; }
+.ocr-preview { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 0.5rem; }
+@media (max-width: 720px) { .ocr-actions button { width: 100%; } }
 
 .description-wrap input { min-width: 220px; }
 @media (max-width: 720px) {

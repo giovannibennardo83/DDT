@@ -14,9 +14,14 @@ const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
 const formTitle = document.getElementById('form-title');
-const ocrInput = document.getElementById('ocr-input');
+const ocrInputCamera = document.getElementById('ocr-input-camera');
+const ocrInputGallery = document.getElementById('ocr-input-gallery');
 const ocrScaricoButton = document.getElementById('ocr-scarico-btn');
-const ocrScaricoInput = document.getElementById('ocr-scarico-input');
+const ocrScaricoGalleryButton = document.getElementById('ocr-scarico-gallery-btn');
+const ocrScaricoInputCamera = document.getElementById('ocr-scarico-input-camera');
+const ocrScaricoInputGallery = document.getElementById('ocr-scarico-input-gallery');
+const ocrStatus = document.getElementById('ocr-status');
+const ocrPreview = document.getElementById('ocr-preview');
 let activeOcrRow = null;
 
 
@@ -91,7 +96,10 @@ function renderRow(riga = createEmptyRiga()) {
 
     <div class="field-with-actions">
       <input type="text" class="lotto" value="${riga.lotto}" placeholder="Lotto" />
-      <button type="button" class="ocr-scan secondary">📷 Leggi REF e LOT da foto</button>
+      <div class="ocr-actions">
+        <button type="button" class="ocr-scan-camera secondary">📷 Scatta foto</button>
+        <button type="button" class="ocr-scan-gallery secondary">🖼️ Carica da galleria</button>
+      </div>
       <small class="error-message"></small>
     </div>
 
@@ -109,9 +117,8 @@ function renderRow(riga = createEmptyRiga()) {
     }
   });
 
-  row.querySelector('.ocr-scan').addEventListener('click', () => {
-    startOcrForRow(row);
-  });
+  row.querySelector('.ocr-scan-camera').addEventListener('click', () => startOcrForRow(row, 'camera'));
+  row.querySelector('.ocr-scan-gallery').addEventListener('click', () => startOcrForRow(row, 'gallery'));
 
   row.querySelectorAll('input').forEach((input) => {
     input.addEventListener('input', () => clearFieldError(input));
@@ -331,73 +338,81 @@ async function syncDDT() {
   }
 }
 
-async function fileToBase64(file) {
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/heic', 'image/heif']);
+const MAX_LONG_SIDE = 1600;
 
-  const img = new Image();
-  const reader = new FileReader();
-
-  return new Promise((resolve, reject) => {
-
-    reader.onload = e => {
-      img.src = e.target.result;
-    };
-
-    img.onload = () => {
-
-      const canvas = document.createElement("canvas");
-
-      const maxSize = 1200;
-
-      let width = img.width;
-      let height = img.height;
-
-      if (width > height && width > maxSize) {
-        height *= maxSize / width;
-        width = maxSize;
-      } else if (height > maxSize) {
-        width *= maxSize / height;
-        height = maxSize;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const base64 = canvas
-        .toDataURL("image/jpeg", 0.8)
-        .split(",")[1];
-
-      resolve(base64);
-
-    };
-
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-
-  });
+function setOcrStatus(message) {
+  if (ocrStatus) ocrStatus.textContent = message || '';
 }
 
-function startOcrForRow(row) {
-  if (!ocrInput) {
+function validateImageFile(file) {
+  if (!file || !String(file.type || '').startsWith('image/')) throw new Error('File non immagine.');
+  const isKnown = SUPPORTED_IMAGE_TYPES.has(file.type);
+  if (!isKnown && file.type) throw new Error(`Formato non supportato: ${file.type}`);
+}
+
+async function compressImage(file) {
+  validateImageFile(file);
+  const quality = file.size > 5 * 1024 * 1024 ? 0.6 : file.size > 2 * 1024 * 1024 ? 0.7 : 0.8;
+  const reader = new FileReader();
+  const img = new Image();
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    reader.onload = (event) => resolve(event.target?.result);
+    reader.onerror = () => reject(new Error('Lettura file fallita.'));
+    reader.readAsDataURL(file);
+  });
+
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error(file.type.includes('heic') || file.type.includes('heif') ? 'Formato HEIC/HEIF non supportato dal browser.' : 'Immagine non decodificabile.'));
+    img.src = dataUrl;
+  });
+
+  let width = img.width;
+  let height = img.height;
+  const longSide = Math.max(width, height);
+  if (longSide > MAX_LONG_SIDE) {
+    const ratio = MAX_LONG_SIDE / longSide;
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas non disponibile.');
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+  return {
+    previewUrl: compressedDataUrl,
+    imageBase64: compressedDataUrl.split(',')[1],
+  };
+}
+
+function startOcrForRow(row, source = 'camera') {
+  const input = source === 'gallery' ? ocrInputGallery : ocrInputCamera;
+  if (!input) {
     alert('Input foto non disponibile.');
     return;
   }
-
+  setOcrStatus('');
   activeOcrRow = row;
-  ocrInput.value = '';
-  ocrInput.click();
+  input.value = '';
+  input.click();
 }
 
-function startOcrScaricoDocumento() {
-  if (!ocrScaricoInput) {
+function startOcrScaricoDocumento(source = 'camera') {
+  const input = source === 'gallery' ? ocrScaricoInputGallery : ocrScaricoInputCamera;
+  if (!input) {
     alert('Input documento non disponibile.');
     return;
   }
-
-  ocrScaricoInput.value = '';
-  ocrScaricoInput.click();
+  setOcrStatus('');
+  input.value = '';
+  input.click();
 }
 
 function normalizeOcrDate(value) {
@@ -470,7 +485,13 @@ async function handleOcrFileChange(event) {
   if (!file || !row) return;
 
   try {
-    const imageBase64 = await fileToBase64(file);
+    setOcrStatus('Compressione immagine in corso...');
+    const { imageBase64, previewUrl } = await compressImage(file);
+    if (ocrPreview) {
+      ocrPreview.src = previewUrl;
+      ocrPreview.hidden = false;
+    }
+    setOcrStatus('OCR in corso...');
     const response = await fetch(OCR_URL, {
   method: "POST",
   headers: {
@@ -504,7 +525,9 @@ async function handleOcrFileChange(event) {
     alert('Impossibile leggere la foto. Riprovare.');
   } finally {
     activeOcrRow = null;
-    if (ocrInput) ocrInput.value = '';
+    setOcrStatus('');
+    if (ocrInputCamera) ocrInputCamera.value = '';
+    if (ocrInputGallery) ocrInputGallery.value = '';
   }
 }
 
@@ -513,7 +536,13 @@ async function handleOcrScaricoFileChange(event) {
   if (!file) return;
 
   try {
-    const imageBase64 = await fileToBase64(file);
+    setOcrStatus('Compressione immagine in corso...');
+    const { imageBase64, previewUrl } = await compressImage(file);
+    if (ocrPreview) {
+      ocrPreview.src = previewUrl;
+      ocrPreview.hidden = false;
+    }
+    setOcrStatus('OCR in corso...');
     const response = await fetch(OCR_URL, {
       method: 'POST',
       headers: {
@@ -535,7 +564,9 @@ async function handleOcrScaricoFileChange(event) {
     console.error('Errore OCR scarico documento:', error);
     alert('Documento non leggibile');
   } finally {
-    if (ocrScaricoInput) ocrScaricoInput.value = '';
+    setOcrStatus('');
+    if (ocrScaricoInputCamera) ocrScaricoInputCamera.value = '';
+    if (ocrScaricoInputGallery) ocrScaricoInputGallery.value = '';
   }
 }
 
@@ -666,17 +697,12 @@ printLastButton.addEventListener('click', () => {
 });
 
 
-if (ocrInput) {
-  ocrInput.addEventListener('change', handleOcrFileChange);
-}
-
-if (ocrScaricoButton) {
-  ocrScaricoButton.addEventListener('click', startOcrScaricoDocumento);
-}
-
-if (ocrScaricoInput) {
-  ocrScaricoInput.addEventListener('change', handleOcrScaricoFileChange);
-}
+if (ocrInputCamera) ocrInputCamera.addEventListener('change', handleOcrFileChange);
+if (ocrInputGallery) ocrInputGallery.addEventListener('change', handleOcrFileChange);
+if (ocrScaricoButton) ocrScaricoButton.addEventListener('click', () => startOcrScaricoDocumento('camera'));
+if (ocrScaricoGalleryButton) ocrScaricoGalleryButton.addEventListener('click', () => startOcrScaricoDocumento('gallery'));
+if (ocrScaricoInputCamera) ocrScaricoInputCamera.addEventListener('change', handleOcrScaricoFileChange);
+if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', handleOcrScaricoFileChange);
 
 [clienteRiga1Input].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
