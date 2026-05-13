@@ -114,6 +114,7 @@
 
         <div class="actions">
           <button type="submit" id="save-ddt-btn">Salva DDT</button>
+          <button id="new-ddt-btn" type="button">Nuovo DDT</button>
           <p id="save-status" class="save-status" aria-live="polite"></p>
           <button type="button" id="cancel-edit" class="secondary" hidden>Annulla modifica</button>
           <button type="button" id="print-last" class="secondary">Stampa ultimo</button>
@@ -128,5 +129,12 @@
 
     <script src="db.js"></script>
     <script src="app.js"></script>
+
+    <div id="save-confirm-modal" class="save-confirm-modal" hidden>
+      <div class="save-confirm-modal__panel" role="dialog" aria-modal="true" aria-labelledby="save-confirm-title">
+        <p id="save-confirm-title">DDT salvato correttamente</p>
+        <button id="save-confirm-ok-btn" type="button">OK</button>
+      </div>
+    </div>
   </body>
 </html>

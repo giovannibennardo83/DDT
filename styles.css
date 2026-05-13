@@ -106,6 +106,30 @@ input, textarea {
   transform: translateX(-50%) translateY(0);
 }
 
+.save-confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 45%);
+  display: grid;
+  place-items: center;
+  z-index: 1100;
+}
+
+.save-confirm-modal__panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 280px;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 25%);
+  text-align: center;
+}
+
+.save-confirm-modal__panel p {
+  margin: 0 0 0.9rem;
+  font-weight: 600;
+}
+
 button {
   border: 0;
   border-radius: 8px;
