@@ -10,6 +10,7 @@ const MITTENTE_FISSO = [
 const form = document.getElementById('ddt-form');
 const list = document.getElementById('ddt-list');
 const printLastButton = document.getElementById('print-last');
+const newDdtButton = document.getElementById('new-ddt-btn');
 const addRowButton = document.getElementById('add-row');
 const righeContainer = document.getElementById('righe-container');
 const cancelEditButton = document.getElementById('cancel-edit');
@@ -74,7 +75,7 @@ function showSaveToast(message, type = 'success') {
     saveStatus.textContent = '';
     saveStatus.classList.remove('is-success', 'is-error');
     saveStatusTimeout = null;
-  }, 2500);
+  }, 3000);
 }
 
 function createEmptyRiga() {
@@ -722,14 +723,18 @@ form.addEventListener('submit', async (event) => {
     saveDDTs(current);
     console.log('SALVATAGGIO DDT');
     backupToDrive({ skipRemoteSafetyCheck: true });
-    resetFormState();
+
+    if (editingIndex === null) {
+      editingIndex = current.findIndex((item) => item.id === ddt.id);
+    }
+
     render(current.sort((a, b) => {
       const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
       const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
       return numB - numA;
     }));
 
-    showSaveToast('DDT salvato con successo', 'success');
+    showSaveToast('Salvataggio completato correttamente', 'success');
   } catch (error) {
     console.error('Errore durante il salvataggio DDT:', error);
     showSaveToast('Errore durante il salvataggio', 'error');
@@ -741,6 +746,7 @@ form.addEventListener('submit', async (event) => {
 addRowButton.addEventListener('click', addRiga);
 
 cancelEditButton.addEventListener('click', resetFormState);
+if (newDdtButton) newDdtButton.addEventListener('click', resetFormState);
 
 printLastButton.addEventListener('click', () => {
   const all = getDDTs();
