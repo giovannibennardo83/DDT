@@ -115,6 +115,10 @@ input, textarea {
   z-index: 1100;
 }
 
+.save-confirm-modal[hidden] {
+  display: none;
+}
+
 .save-confirm-modal__panel {
   background: #fff;
   border-radius: 12px;
