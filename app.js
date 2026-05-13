@@ -36,7 +36,10 @@ const causaleInput = document.getElementById('causale_trasporto');
 const inizialiInput = document.getElementById('iniziali_paziente');
 const cartellaInput = document.getElementById('cartella_clinica');
 const saveButton = document.getElementById('save-ddt-btn');
+const newDDTButton = document.getElementById('new-ddt-btn');
 const saveStatus = document.getElementById('save-status');
+const saveConfirmModal = document.getElementById('save-confirm-modal');
+const saveConfirmOkButton = document.getElementById('save-confirm-ok-btn');
 
 let editingIndex = null;
 let syncInProgress = false;
@@ -75,6 +78,16 @@ function showSaveToast(message, type = 'success') {
     saveStatus.classList.remove('is-success', 'is-error');
     saveStatusTimeout = null;
   }, 2500);
+}
+
+function showSaveConfirmModal() {
+  if (!saveConfirmModal) return;
+  saveConfirmModal.hidden = false;
+}
+
+function hideSaveConfirmModal() {
+  if (!saveConfirmModal) return;
+  saveConfirmModal.hidden = true;
 }
 
 function createEmptyRiga() {
@@ -722,14 +735,13 @@ form.addEventListener('submit', async (event) => {
     saveDDTs(current);
     console.log('SALVATAGGIO DDT');
     backupToDrive({ skipRemoteSafetyCheck: true });
-    resetFormState();
     render(current.sort((a, b) => {
       const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
       const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
       return numB - numA;
     }));
 
-    showSaveToast('DDT salvato con successo', 'success');
+    showSaveConfirmModal();
   } catch (error) {
     console.error('Errore durante il salvataggio DDT:', error);
     showSaveToast('Errore durante il salvataggio', 'error');
@@ -741,6 +753,8 @@ form.addEventListener('submit', async (event) => {
 addRowButton.addEventListener('click', addRiga);
 
 cancelEditButton.addEventListener('click', resetFormState);
+if (newDDTButton) newDDTButton.addEventListener('click', resetFormState);
+if (saveConfirmOkButton) saveConfirmOkButton.addEventListener('click', hideSaveConfirmModal);
 
 printLastButton.addEventListener('click', () => {
   const all = getDDTs();
