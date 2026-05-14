@@ -465,12 +465,39 @@ function normalizeOcrDate(value) {
 
   const isoMatch = input.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
   if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    if (
+      Number.isInteger(year) &&
+      month >= 1 &&
+      month <= 12 &&
+      day >= 1 &&
+      day <= 31
+    ) {
+      return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    return '';
   }
 
-  const itMatch = input.match(/^(\d{2})[./-](\d{2})[./-](\d{4})$/);
+  const itMatch = input.match(/^(\d{2})[./-](\d{2})[./-](\d{2}|\d{4})$/);
   if (itMatch) {
-    return `${itMatch[3]}-${itMatch[2]}-${itMatch[1]}`;
+    const day = Number(itMatch[1]);
+    const month = Number(itMatch[2]);
+    const yearRaw = itMatch[3];
+    const year = yearRaw.length === 2
+      ? (Number(yearRaw) <= 69 ? 2000 + Number(yearRaw) : 1900 + Number(yearRaw))
+      : Number(yearRaw);
+
+    if (
+      month >= 1 &&
+      month <= 12 &&
+      day >= 1 &&
+      day <= 31
+    ) {
+      return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    return '';
   }
 
   return '';
