@@ -229,35 +229,3 @@ li {
   .description-wrap input { min-width: 0; }
 }
 
-.signature-modal {
-  position: fixed;
-  inset: 0;
-  background: rgb(15 23 42 / 55%);
-  display: grid;
-  place-items: center;
-  z-index: 3000;
-  padding: 1rem;
-}
-.signature-modal-content {
-  width: min(760px, 100%);
-  background: #fff;
-  border-radius: 14px;
-  padding: 1rem;
-  box-shadow: 0 20px 50px rgb(15 23 42 / 35%);
-}
-#signature-canvas {
-  width: 100%;
-  height: auto;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  touch-action: none;
-  display: block;
-  background: #fff;
-}
-.signature-modal-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
