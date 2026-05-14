@@ -52,10 +52,11 @@ function setSavingState(saving) {
   saveButton.innerHTML = saving
     ? '<span class="save-spinner" aria-hidden="true"></span>Sto salvando...'
     : 'Salva DDT';
-
-  if (saveStatus) {
-    saveStatus.textContent = saving ? 'Sto salvando...' : '';
-  }
+  
+  if (saveStatus && saving) {
+    saveStatus.textContent = 'Sto salvando...';
+    }
+  
 }
 
 
