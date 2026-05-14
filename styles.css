@@ -86,7 +86,10 @@ input, textarea {
   justify-content: center;
   width: max-content;
   max-width: min(90vw, 380px);
+  min-width: 220px;
+  min-height: 56px;
   margin: 0;
+  white-space: nowrap;
   padding: 0.85rem 1.1rem;
   border-radius: 12px;
   color: #fff;
