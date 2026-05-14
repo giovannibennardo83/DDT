@@ -62,10 +62,7 @@
             />
             <div>FIRMA MITTENTE ______________________</div>
           </div>
-          <div class="dest-signature-block">
-            <img id="dest-signature" class="signature-image" alt="Firma destinatario" />
-            <div>FIRMA DESTINATARIO __________________</div>
-          </div>
+          <div>FIRMA DESTINATARIO __________________</div>
         </div>
       </div>
     </div>
@@ -103,11 +100,6 @@
         document.getElementById('causale').textContent = ddt.causale_trasporto || '';
         document.getElementById('iniziali').textContent = ddt.iniziali_paziente || '';
         document.getElementById('cartella').textContent = ddt.cartella_clinica || '';
-        const signatureNode = document.getElementById('dest-signature');
-        if (signatureNode && ddt.signature) {
-          signatureNode.src = ddt.signature;
-          signatureNode.style.display = 'block';
-        }
 
         const normalized = righe.map((r) => ({
           codice_articolo: String(r.codice_articolo || '').trim(),

@@ -38,93 +38,11 @@ const cartellaInput = document.getElementById('cartella_clinica');
 const saveButton = document.getElementById('save-ddt-btn');
 const newDDTButton = document.getElementById('new-ddt-btn');
 const saveStatus = document.getElementById('save-status');
-const openSignatureButton = document.getElementById('open-signature-btn');
-const signatureModal = document.getElementById('signature-modal');
-const signatureCanvas = document.getElementById('signature-canvas');
-const clearSignatureButton = document.getElementById('clear-signature-btn');
-const confirmSignatureButton = document.getElementById('confirm-signature-btn');
-const closeSignatureButton = document.getElementById('close-signature-btn');
 
 let editingIndex = null;
 let syncInProgress = false;
 let isSaving = false;
 let saveStatusTimeout = null;
-let currentSignatureDataUrl = '';
-let signatureDrawActive = false;
-let signatureLastPoint = null;
-
-function getSignatureContext() {
-  return signatureCanvas ? signatureCanvas.getContext('2d') : null;
-}
-
-function clearSignatureCanvas() {
-  const ctx = getSignatureContext();
-  if (!ctx || !signatureCanvas) return;
-  ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-}
-
-function drawSignatureFromDataUrl(dataUrl) {
-  if (!signatureCanvas) return;
-  clearSignatureCanvas();
-  if (!dataUrl) return;
-  const ctx = getSignatureContext();
-  if (!ctx) return;
-  const image = new Image();
-  image.onload = () => ctx.drawImage(image, 0, 0, signatureCanvas.width, signatureCanvas.height);
-  image.src = dataUrl;
-}
-
-function openSignatureModal() {
-  if (!signatureModal) return;
-  signatureModal.hidden = false;
-  drawSignatureFromDataUrl(currentSignatureDataUrl);
-}
-
-function closeSignatureModal() {
-  if (!signatureModal) return;
-  signatureModal.hidden = true;
-}
-
-function getCanvasPoint(event) {
-  if (!signatureCanvas) return null;
-  const rect = signatureCanvas.getBoundingClientRect();
-  const touch = event.touches?.[0] || event.changedTouches?.[0];
-  const clientX = touch ? touch.clientX : event.clientX;
-  const clientY = touch ? touch.clientY : event.clientY;
-  if (typeof clientX !== 'number' || typeof clientY !== 'number') return null;
-  return {
-    x: (clientX - rect.left) * (signatureCanvas.width / rect.width),
-    y: (clientY - rect.top) * (signatureCanvas.height / rect.height),
-  };
-}
-
-function startSignatureDraw(event) {
-  const point = getCanvasPoint(event);
-  if (!point) return;
-  signatureDrawActive = true;
-  signatureLastPoint = point;
-}
-
-function moveSignatureDraw(event) {
-  if (!signatureDrawActive) return;
-  const point = getCanvasPoint(event);
-  const ctx = getSignatureContext();
-  if (!point || !ctx || !signatureLastPoint) return;
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#111827';
-  ctx.beginPath();
-  ctx.moveTo(signatureLastPoint.x, signatureLastPoint.y);
-  ctx.lineTo(point.x, point.y);
-  ctx.stroke();
-  signatureLastPoint = point;
-  event.preventDefault();
-}
-
-function endSignatureDraw() {
-  signatureDrawActive = false;
-  signatureLastPoint = null;
-}
 
 function setSavingState(saving) {
   isSaving = saving;
@@ -322,8 +240,6 @@ function resetFormState() {
   numeroInput.placeholder = 'Assegnato al salvataggio';
   righeContainer.innerHTML = '';
   addRiga();
-  currentSignatureDataUrl = '';
-  clearSignatureCanvas();
 }
 
 function loadInForm(ddt, index) {
@@ -338,8 +254,6 @@ function loadInForm(ddt, index) {
   causaleInput.value = ddt.causale_trasporto || '';
   inizialiInput.value = ddt.iniziali_paziente || '';
   cartellaInput.value = ddt.cartella_clinica || '';
-  currentSignatureDataUrl = ddt.signature || '';
-  drawSignatureFromDataUrl(currentSignatureDataUrl);
 
   righeContainer.innerHTML = '';
   if (!ddt.righe.length) {
@@ -792,7 +706,6 @@ form.addEventListener('submit', async (event) => {
       causale_trasporto: causaleInput.value.trim(),
       iniziali_paziente: inizialiInput.value.trim(),
       cartella_clinica: cartellaInput.value.trim(),
-      signature: currentSignatureDataUrl,
       righe,
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -849,26 +762,6 @@ if (ocrScaricoButton) ocrScaricoButton.addEventListener('click', () => startOcrS
 if (ocrScaricoGalleryButton) ocrScaricoGalleryButton.addEventListener('click', () => startOcrScaricoDocumento('gallery'));
 if (ocrScaricoInputCamera) ocrScaricoInputCamera.addEventListener('change', handleOcrScaricoFileChange);
 if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', handleOcrScaricoFileChange);
-if (openSignatureButton) openSignatureButton.addEventListener('click', openSignatureModal);
-if (closeSignatureButton) closeSignatureButton.addEventListener('click', closeSignatureModal);
-if (clearSignatureButton) clearSignatureButton.addEventListener('click', clearSignatureCanvas);
-if (confirmSignatureButton) {
-  confirmSignatureButton.addEventListener('click', () => {
-    if (!signatureCanvas) return;
-    currentSignatureDataUrl = signatureCanvas.toDataURL('image/png');
-    closeSignatureModal();
-  });
-}
-if (signatureCanvas) {
-  signatureCanvas.addEventListener('mousedown', startSignatureDraw);
-  signatureCanvas.addEventListener('mousemove', moveSignatureDraw);
-  signatureCanvas.addEventListener('mouseup', endSignatureDraw);
-  signatureCanvas.addEventListener('mouseleave', endSignatureDraw);
-  signatureCanvas.addEventListener('touchstart', startSignatureDraw, { passive: false });
-  signatureCanvas.addEventListener('touchmove', moveSignatureDraw, { passive: false });
-  signatureCanvas.addEventListener('touchend', endSignatureDraw);
-  signatureCanvas.addEventListener('touchcancel', endSignatureDraw);
-}
 
 [clienteRiga1Input].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
