@@ -716,6 +716,7 @@ form.addEventListener('submit', async (event) => {
 
     if (editingIndex === null) {
       current.unshift(ddt);
+      editingIndex = current.findIndex((item) => item.id === ddt.id);
     } else {
       current[editingIndex] = ddt;
     }
