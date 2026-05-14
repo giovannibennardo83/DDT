@@ -35,9 +35,7 @@ Analizza questo documento di scarico sala operatoria.
 
 Regole OCR:
 - Estrai intestazione ospedale/struttura come "cliente"
-- Le date presenti nei documenti sono SEMPRE in formato italiano: DD/MM/YY oppure DD/MM/YYYY
-- Interpreta SEMPRE il primo numero della data come giorno
-- Estrai data documento e restituiscila SEMPRE normalizzata in formato YYYY-MM-DD
+- Estrai data documento in formato YYYY-MM-DD
 - Estrai iniziali paziente come "iniziali_paziente"
 - Estrai numero cartella clinica (CC o SDO) come "cartella_clinica"
 - Estrai tutte le etichette dispositivi come righe con REF, LOT e description
@@ -155,6 +153,13 @@ try {
   throw new Error("Invalid JSON from OCR");
 }
 if (isDocumentMode) {
+
+  // Normalizza data (DD/MM/YYYY → YYYY-MM-DD)
+  if (parsed.data && parsed.data.includes("/")) {
+    const [day, month, year] = parsed.data.split("/");
+    parsed.data = `${year}-${month}-${day}`;
+  }
+
   // Sicurezza campi
   parsed.cliente = parsed.cliente || "";
   parsed.iniziali_paziente = parsed.iniziali_paziente || "";
