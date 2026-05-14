@@ -35,7 +35,11 @@ Analizza questo documento di scarico sala operatoria.
 
 Regole OCR:
 - Estrai intestazione ospedale/struttura come "cliente"
-- Estrai data documento in formato YYYY-MM-DD
+- Estrai la data ESATTAMENTE come appare nel documento
+- Le date nei documenti italiani sono SEMPRE: DD/MM/YY oppure DD/MM/YYYY
+- NON reinterpretare il formato
+- NON convertire la data
+- Restituisci la stringa originale letta dal documento
 - Estrai iniziali paziente come "iniziali_paziente"
 - Estrai numero cartella clinica (CC o SDO) come "cartella_clinica"
 - Estrai tutte le etichette dispositivi come righe con REF, LOT e description
@@ -49,7 +53,7 @@ Regole OCR:
 Rispondi SOLO JSON valido in questo formato:
 {
   "cliente": "nome struttura",
-  "data": "YYYY-MM-DD",
+  "data": "DD/MM/YY o DD/MM/YYYY (raw)",
   "iniziali_paziente": "XX",
   "cartella_clinica": "12345",
   "righe": [
@@ -61,6 +65,10 @@ Rispondi SOLO JSON valido in questo formato:
     }
   ]
 }
+
+Esempi data:
+21/12/26 -> "21/12/26"
+05/01/2025 -> "05/01/2025"
 `
       : `
 Analizza questa etichetta di protesi ortopedica tramite OCR.
@@ -152,13 +160,26 @@ try {
   console.error("JSON PARSE ERROR:", clean);
   throw new Error("Invalid JSON from OCR");
 }
-if (isDocumentMode) {
 
-  // Normalizza data (DD/MM/YYYY → YYYY-MM-DD)
-  if (parsed.data && parsed.data.includes("/")) {
-    const [day, month, year] = parsed.data.split("/");
-    parsed.data = `${year}-${month}-${day}`;
+const normalizeItalianDate = (value) => {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{2})[\/\-.](\d{2})[\/\-.](\d{2}|\d{4})$/);
+  if (!match) return "";
+
+  const day = match[1];
+  const month = match[2];
+  let year = match[3];
+
+  if (year.length === 2) {
+    const yy = Number(year);
+    year = yy <= 69 ? `20${year}` : `19${year}`;
   }
+
+  return `${year}-${month}-${day}`;
+};
+
+if (isDocumentMode) {
+  parsed.data = normalizeItalianDate(parsed.data);
 
   // Sicurezza campi
   parsed.cliente = parsed.cliente || "";
