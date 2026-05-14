@@ -38,8 +38,6 @@ const cartellaInput = document.getElementById('cartella_clinica');
 const saveButton = document.getElementById('save-ddt-btn');
 const newDDTButton = document.getElementById('new-ddt-btn');
 const saveStatus = document.getElementById('save-status');
-const saveConfirmModal = document.getElementById('save-confirm-modal');
-const saveConfirmOkButton = document.getElementById('save-confirm-ok-btn');
 
 let editingIndex = null;
 let syncInProgress = false;
@@ -77,17 +75,7 @@ function showSaveToast(message, type = 'success') {
     saveStatus.textContent = '';
     saveStatus.classList.remove('is-success', 'is-error');
     saveStatusTimeout = null;
-  }, 2500);
-}
-
-function showSaveConfirmModal() {
-  if (!saveConfirmModal) return;
-  saveConfirmModal.hidden = false;
-}
-
-function hideSaveConfirmModal() {
-  if (!saveConfirmModal) return;
-  saveConfirmModal.hidden = true;
+  }, 3000);
 }
 
 function createEmptyRiga() {
@@ -741,7 +729,7 @@ form.addEventListener('submit', async (event) => {
       return numB - numA;
     }));
 
-    showSaveConfirmModal();
+    showSaveToast('DDT salvato correttamente', 'success');
   } catch (error) {
     console.error('Errore durante il salvataggio DDT:', error);
     showSaveToast('Errore durante il salvataggio', 'error');
@@ -754,7 +742,6 @@ addRowButton.addEventListener('click', addRiga);
 
 cancelEditButton.addEventListener('click', resetFormState);
 if (newDDTButton) newDDTButton.addEventListener('click', resetFormState);
-if (saveConfirmOkButton) saveConfirmOkButton.addEventListener('click', hideSaveConfirmModal);
 
 printLastButton.addEventListener('click', () => {
   const all = getDDTs();

@@ -75,63 +75,39 @@ input, textarea {
 .actions { margin-top: 1rem; flex-wrap: wrap; }
 .item-buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
+
 .save-status {
   position: fixed;
+  top: 50%;
   left: 50%;
-  bottom: 1.25rem;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   margin: 0;
-  padding: 0.7rem 1rem;
-  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
   color: #fff;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 8px 22px rgb(15 23 42 / 20%);
+  text-align: center;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 18%);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 999;
-  max-width: calc(100vw - 2rem);
+  z-index: 2000;
+  max-width: min(90vw, 380px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.save-status.is-success,
+.save-status.is-error {
+  opacity: 1;
+  transform: translate(-50%, -50%);
 }
 
 .save-status.is-success {
   background: #16a34a;
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
 }
 
 .save-status.is-error {
   background: #dc2626;
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-.save-confirm-modal {
-  position: fixed;
-  inset: 0;
-  background: rgb(15 23 42 / 45%);
-  display: grid;
-  place-items: center;
-  z-index: 1100;
-}
-
-.save-confirm-modal[hidden] {
-  display: none;
-}
-
-.save-confirm-modal__panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1rem;
-  min-width: 280px;
-  max-width: calc(100vw - 2rem);
-  box-shadow: 0 12px 28px rgb(15 23 42 / 25%);
-  text-align: center;
-}
-
-.save-confirm-modal__panel p {
-  margin: 0 0 0.9rem;
-  font-weight: 600;
 }
 
 button {
@@ -245,10 +221,3 @@ li {
   .description-wrap input { min-width: 0; }
 }
 
-@media (max-width: 720px) {
-  .save-status {
-    bottom: 1rem;
-    width: calc(100vw - 1.5rem);
-    text-align: center;
-  }
-}
