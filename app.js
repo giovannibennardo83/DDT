@@ -120,6 +120,14 @@ function clearSimpleFieldError(input) {
   if (small) small.textContent = '';
 }
 
+function scrollToFirstError(input) {
+  if (!input || typeof input.scrollIntoView !== 'function') return;
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (typeof input.focus === 'function') {
+    input.focus({ preventScroll: true });
+  }
+}
+
 function renderRow(riga = createEmptyRiga()) {
   const row = document.createElement('div');
   row.className = 'riga-row';
@@ -191,10 +199,12 @@ function extractAndValidateRighe() {
   const rows = [...righeContainer.querySelectorAll('.riga-row')];
   const result = [];
   let valid = true;
+  let firstErrorInput = null;
 
   if (rows.length === 0) {
     valid = false;
     addRiga();
+    firstErrorInput = righeContainer.querySelector('.riga-row .codice_articolo');
   }
 
   rows.forEach((row) => {
@@ -212,23 +222,27 @@ function extractAndValidateRighe() {
 
     if (!normalized.codice_articolo) {
       setFieldError(codice, 'Obbligatorio');
+      if (!firstErrorInput) firstErrorInput = codice;
       valid = false;
     }
 
     if (!normalized.lotto) {
       setFieldError(lotto, 'Obbligatorio');
+      if (!firstErrorInput) firstErrorInput = lotto;
       valid = false;
     }
 
-    if (!Number.isFinite(normalized.quantita) || normalized.quantita < 1) {
+    const quantitaValue = Number(quantita.value);
+    if (!Number.isFinite(quantitaValue) || quantitaValue < 1) {
       setFieldError(quantita, 'Minimo 1');
+      if (!firstErrorInput) firstErrorInput = quantita;
       valid = false;
     }
 
     result.push(normalized);
   });
 
-  return { valid, righe: result };
+  return { valid, righe: result, firstErrorInput };
 }
 
 function resetFormState() {
@@ -677,16 +691,29 @@ form.addEventListener('submit', async (event) => {
   if (isSaving) return;
 
   clearSimpleFieldError(clienteRiga1Input);
+  clearSimpleFieldError(causaleInput);
 
-  const { valid, righe } = extractAndValidateRighe();
+  const { valid, righe, firstErrorInput: firstRowErrorInput } = extractAndValidateRighe();
   let formValid = valid;
+  let firstErrorInput = firstRowErrorInput;
 
   if (!clienteRiga1Input.value.trim()) {
     setSimpleFieldError(clienteRiga1Input, 'Obbligatorio');
+    firstErrorInput = firstErrorInput || clienteRiga1Input;
     formValid = false;
   }
 
-  if (!formValid) return;
+  if (!causaleInput.value.trim()) {
+    setSimpleFieldError(causaleInput, 'Obbligatorio');
+    firstErrorInput = firstErrorInput || causaleInput;
+    formValid = false;
+  }
+
+  if (!formValid) {
+    showSaveToast('Compila tutti i campi obbligatori', 'error');
+    scrollToFirstError(firstErrorInput);
+    return;
+  }
 
   setSavingState(true);
 
@@ -763,7 +790,7 @@ if (ocrScaricoGalleryButton) ocrScaricoGalleryButton.addEventListener('click', (
 if (ocrScaricoInputCamera) ocrScaricoInputCamera.addEventListener('change', handleOcrScaricoFileChange);
 if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', handleOcrScaricoFileChange);
 
-[clienteRiga1Input].forEach((input) => {
+[clienteRiga1Input, causaleInput].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
 });
 
