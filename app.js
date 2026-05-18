@@ -421,11 +421,11 @@ function saveAndPrint(ddt) {
 }
 
 async function backupToDrive(options = {}) {
-  const { skipRemoteSafetyCheck = false } = options;
+  const { skipRemoteSafetyCheck = false, ddt: providedDDT = null } = options;
   console.log('PARTO BACKUP');
 
   try {
-    const ddt = await getAllDDT();
+    const ddt = Array.isArray(providedDDT) ? providedDDT : await getAllDDT();
     const counters = await getCounters();
     const localUpdatedAt = new Date().toISOString();
 
@@ -812,7 +812,7 @@ function render(ddts) {
 
       console.log('DDT ELIMINATO DEFINITIVAMENTE');
 
-      backupToDrive({ skipRemoteSafetyCheck: true });
+      backupToDrive({ skipRemoteSafetyCheck: true, ddt: updated });
     });
 
     buttons.append(editButton, printButton, deleteButton);
@@ -884,7 +884,7 @@ form.addEventListener('submit', async (event) => {
     saveDDTs(current);
     console.log('SALVATAGGIO DDT');
     console.log('CURRENT DDT', current);
-    backupToDrive({ skipRemoteSafetyCheck: true });
+    backupToDrive({ skipRemoteSafetyCheck: true, ddt: current });
     render(current.sort((a, b) => {
       const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
       const numB = parseInt((b.numero || '').replace(/\D/g, '') || '0');
