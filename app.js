@@ -804,6 +804,7 @@ if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', ha
 
 if (firmaDestinatarioButton) firmaDestinatarioButton.addEventListener('click', openFirmaModal);
 if (closeFirmaModalButton) closeFirmaModalButton.addEventListener('click', closeFirmaModal);
+if (firmaModal) firmaModal.hidden = true;
 if (firmaModal) {
   firmaModal.addEventListener('click', (event) => {
     if (event.target === firmaModal) {

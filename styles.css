@@ -242,6 +242,10 @@ li {
   z-index: 1500;
 }
 
+.modal-overlay[hidden] {
+  display: none !important;
+}
+
 .modal-content {
   width: min(100%, 760px);
   background: #fff;
