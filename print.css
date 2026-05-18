@@ -54,3 +54,8 @@ td.description { white-space: normal; word-break: break-word; }
   background: transparent;
   display: block;
 }
+
+.firma-destinatario-label {
+  position: relative;
+  top: 8px;
+}
