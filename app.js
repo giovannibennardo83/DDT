@@ -883,6 +883,7 @@ form.addEventListener('submit', async (event) => {
 
     saveDDTs(current);
     console.log('SALVATAGGIO DDT');
+    console.log('CURRENT DDT', current);
     backupToDrive({ skipRemoteSafetyCheck: true });
     render(current.sort((a, b) => {
       const numA = parseInt((a.numero || '').replace(/\D/g, '') || '0');
