@@ -62,7 +62,10 @@
             />
             <div>FIRMA MITTENTE ______________________</div>
           </div>
-          <div>FIRMA DESTINATARIO __________________</div>
+          <div class="firma-destinatario-block">
+            <div id="firmaDestinatarioContainer" class="firma-destinatario-container" aria-hidden="true"></div>
+            <div>FIRMA DESTINATARIO __________________</div>
+          </div>
         </div>
       </div>
     </div>
@@ -100,6 +103,23 @@
         document.getElementById('causale').textContent = ddt.causale_trasporto || '';
         document.getElementById('iniziali').textContent = ddt.iniziali_paziente || '';
         document.getElementById('cartella').textContent = ddt.cartella_clinica || '';
+
+        const firmaDestinatario = String(ddt.firma_destinatario || '').trim();
+        if (firmaDestinatario) {
+          const firmaContainer = document.getElementById('firmaDestinatarioContainer');
+          const firmaImg = document.createElement('img');
+          firmaImg.className = 'firma-destinatario-img';
+          firmaImg.alt = 'Firma destinatario';
+          firmaImg.src = firmaDestinatario;
+          firmaImg.loading = 'eager';
+          firmaImg.decoding = 'sync';
+          firmaImg.onerror = function () {
+            this.remove();
+            firmaContainer.setAttribute('aria-hidden', 'true');
+          };
+          firmaContainer.appendChild(firmaImg);
+          firmaContainer.setAttribute('aria-hidden', 'false');
+        }
 
         const normalized = righe.map((r) => ({
           codice_articolo: String(r.codice_articolo || '').trim(),
