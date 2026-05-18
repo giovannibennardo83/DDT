@@ -41,6 +41,8 @@ const saveStatus = document.getElementById('save-status');
 const firmaDestinatarioButton = document.getElementById('firma-destinatario-btn');
 const firmaModal = document.getElementById('firma-modal');
 const closeFirmaModalButton = document.getElementById('close-firma-modal');
+const clearFirmaModalButton = document.getElementById('clear-firma-modal');
+const saveFirmaModalButton = document.getElementById('save-firma-modal');
 const firmaCanvas = document.getElementById('firma-canvas');
 
 let editingIndex = null;
@@ -102,6 +104,15 @@ function openFirmaModal() {
 function closeFirmaModal() {
   if (!firmaModal) return;
   firmaModal.hidden = true;
+}
+
+function clearFirmaPlaceholder() {
+  // Placeholder: la pulizia reale del canvas verrà implementata successivamente.
+}
+
+function saveFirmaPlaceholder() {
+  closeFirmaModal();
+  showSaveToast('Firma acquisita', 'success');
 }
 
 function createEmptyRiga() {
@@ -804,6 +815,8 @@ if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', ha
 
 if (firmaDestinatarioButton) firmaDestinatarioButton.addEventListener('click', openFirmaModal);
 if (closeFirmaModalButton) closeFirmaModalButton.addEventListener('click', closeFirmaModal);
+if (clearFirmaModalButton) clearFirmaModalButton.addEventListener('click', clearFirmaPlaceholder);
+if (saveFirmaModalButton) saveFirmaModalButton.addEventListener('click', saveFirmaPlaceholder);
 if (firmaModal) firmaModal.hidden = true;
 if (firmaModal) {
   firmaModal.addEventListener('click', (event) => {
