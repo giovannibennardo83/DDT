@@ -383,6 +383,8 @@ function resetFormState() {
   numeroInput.placeholder = 'Assegnato al salvataggio';
   righeContainer.innerHTML = '';
   addRiga();
+  temporaryFirmaImage = null;
+  updateFirmaPreview();
 }
 
 function loadInForm(ddt, index) {
@@ -404,7 +406,11 @@ function loadInForm(ddt, index) {
   } else {
     ddt.righe.forEach((riga) => renderRow(normalizeRiga(riga)));
   }
+
+  temporaryFirmaImage = ddt.firma_destinatario || null;
+  updateFirmaPreview();
 }
+
 
 function saveAndPrint(ddt) {
   localStorage.setItem('printDDT', JSON.stringify({ ...ddt, mittente: MITTENTE_FISSO }));
@@ -859,6 +865,7 @@ form.addEventListener('submit', async (event) => {
       iniziali_paziente: inizialiInput.value.trim(),
       cartella_clinica: cartellaInput.value.trim(),
       righe,
+      firma_destinatario: temporaryFirmaImage || null,
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
