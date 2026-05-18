@@ -49,6 +49,9 @@ let editingIndex = null;
 let syncInProgress = false;
 let isSaving = false;
 let saveStatusTimeout = null;
+let firmaCtx = null;
+let firmaIsDrawing = false;
+let firmaLastPoint = null;
 
 function setSavingState(saving) {
   isSaving = saving;
@@ -87,12 +90,41 @@ function showSaveToast(message, type = 'success') {
 
 
 
+function initFirmaCanvasContext() {
+  if (!firmaCanvas) return null;
+  const ctx = firmaCanvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2.2;
+
+  return ctx;
+}
+
+function clearFirmaCanvas() {
+  if (!firmaCanvas) return;
+  if (!firmaCtx) firmaCtx = initFirmaCanvasContext();
+  if (!firmaCtx) return;
+
+  firmaCtx.save();
+  firmaCtx.setTransform(1, 0, 0, 1, 0, 0);
+  firmaCtx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
+  firmaCtx.restore();
+}
+
 function resizeFirmaCanvas() {
   if (!firmaCanvas) return;
   const ratio = window.devicePixelRatio || 1;
   const rect = firmaCanvas.getBoundingClientRect();
   firmaCanvas.width = Math.max(1, Math.round(rect.width * ratio));
   firmaCanvas.height = Math.max(1, Math.round(rect.height * ratio));
+
+  firmaCtx = initFirmaCanvasContext();
+  if (!firmaCtx) return;
+  firmaCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  clearFirmaCanvas();
 }
 
 function openFirmaModal() {
@@ -106,8 +138,63 @@ function closeFirmaModal() {
   firmaModal.hidden = true;
 }
 
+function getFirmaPoint(event) {
+  if (!firmaCanvas) return null;
+  const rect = firmaCanvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+}
+
+function onFirmaPointerDown(event) {
+  if (!firmaCanvas || !firmaCtx) return;
+  event.preventDefault();
+
+  firmaIsDrawing = true;
+  firmaLastPoint = getFirmaPoint(event);
+  if (!firmaLastPoint) return;
+
+  firmaCtx.beginPath();
+  firmaCtx.moveTo(firmaLastPoint.x, firmaLastPoint.y);
+
+  if (typeof firmaCanvas.setPointerCapture === 'function' && event.pointerId !== undefined) {
+    firmaCanvas.setPointerCapture(event.pointerId);
+  }
+}
+
+function onFirmaPointerMove(event) {
+  if (!firmaIsDrawing || !firmaCtx) return;
+  event.preventDefault();
+
+  const point = getFirmaPoint(event);
+  if (!point || !firmaLastPoint) return;
+
+  firmaCtx.beginPath();
+  firmaCtx.moveTo(firmaLastPoint.x, firmaLastPoint.y);
+  firmaCtx.lineTo(point.x, point.y);
+  firmaCtx.stroke();
+
+  firmaLastPoint = point;
+}
+
+function onFirmaPointerUp(event) {
+  if (!firmaCanvas) return;
+
+  firmaIsDrawing = false;
+  firmaLastPoint = null;
+
+  if (typeof firmaCanvas.releasePointerCapture === 'function' && event.pointerId !== undefined) {
+    try {
+      firmaCanvas.releasePointerCapture(event.pointerId);
+    } catch (_) {
+      // Ignora: il puntatore potrebbe non essere più catturato.
+    }
+  }
+}
+
 function clearFirmaPlaceholder() {
-  // Placeholder: la pulizia reale del canvas verrà implementata successivamente.
+  clearFirmaCanvas();
 }
 
 function saveFirmaPlaceholder() {
@@ -817,6 +904,13 @@ if (firmaDestinatarioButton) firmaDestinatarioButton.addEventListener('click', o
 if (closeFirmaModalButton) closeFirmaModalButton.addEventListener('click', closeFirmaModal);
 if (clearFirmaModalButton) clearFirmaModalButton.addEventListener('click', clearFirmaPlaceholder);
 if (saveFirmaModalButton) saveFirmaModalButton.addEventListener('click', saveFirmaPlaceholder);
+if (firmaCanvas) {
+  firmaCanvas.addEventListener('pointerdown', onFirmaPointerDown);
+  firmaCanvas.addEventListener('pointermove', onFirmaPointerMove);
+  firmaCanvas.addEventListener('pointerup', onFirmaPointerUp);
+  firmaCanvas.addEventListener('pointercancel', onFirmaPointerUp);
+  firmaCanvas.addEventListener('pointerleave', onFirmaPointerUp);
+}
 if (firmaModal) firmaModal.hidden = true;
 if (firmaModal) {
   firmaModal.addEventListener('click', (event) => {
