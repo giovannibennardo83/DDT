@@ -435,6 +435,9 @@ async function backupToDrive(options = {}) {
       ddt,
       counters,
     };
+    
+    console.log('BACKUP PAYLOAD SIZE', JSON.stringify(data).length);
+    console.log('BACKUP FIRST DDT', data.ddt[0]);
 
     if (!skipRemoteSafetyCheck) {
       const remoteRes = await fetch(BACKUP_URL + '?t=' + Date.now());
