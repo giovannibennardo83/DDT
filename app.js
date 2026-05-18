@@ -677,6 +677,7 @@ form.addEventListener('submit', async (event) => {
   if (isSaving) return;
 
   clearSimpleFieldError(clienteRiga1Input);
+  clearSimpleFieldError(causaleInput);
 
   const { valid, righe } = extractAndValidateRighe();
   let formValid = valid;
@@ -686,7 +687,15 @@ form.addEventListener('submit', async (event) => {
     formValid = false;
   }
 
-  if (!formValid) return;
+  if (!causaleInput.value.trim()) {
+    setSimpleFieldError(causaleInput, 'Obbligatorio');
+    formValid = false;
+  }
+
+  if (!formValid) {
+    showSaveToast('Compila tutti i campi obbligatori', 'error');
+    return;
+  }
 
   setSavingState(true);
 
@@ -763,7 +772,7 @@ if (ocrScaricoGalleryButton) ocrScaricoGalleryButton.addEventListener('click', (
 if (ocrScaricoInputCamera) ocrScaricoInputCamera.addEventListener('change', handleOcrScaricoFileChange);
 if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', handleOcrScaricoFileChange);
 
-[clienteRiga1Input].forEach((input) => {
+[clienteRiga1Input, causaleInput].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
 });
 
