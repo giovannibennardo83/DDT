@@ -229,3 +229,53 @@ li {
   .description-wrap input { min-width: 0; }
 }
 
+
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(15 23 42 / 55%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1500;
+}
+
+.modal-content {
+  width: min(100%, 760px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 25%);
+}
+
+#firma-canvas {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  height: clamp(240px, 40vh, 320px);
+  margin-top: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  touch-action: none;
+}
+
+.modal-actions {
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .modal-content {
+    width: 100%;
+    padding: 0.85rem;
+  }
+
+  #firma-canvas {
+    min-height: 220px;
+    height: 42vh;
+  }
+}
