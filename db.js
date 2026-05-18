@@ -55,6 +55,7 @@ function normalizeDDTStorage(ddt) {
     causale_trasporto: String(ddt?.causale_trasporto ?? '').trim(),
     iniziali_paziente: String(ddt?.iniziali_paziente ?? '').trim(),
     cartella_clinica: String(ddt?.cartella_clinica ?? '').trim(),
+    firma_destinatario: String(ddt?.firma_destinatario ?? '').trim() || null,
     righe: sourceRows.map(normalizeRigaStorage),
   };
 
