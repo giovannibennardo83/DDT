@@ -29,10 +29,6 @@ td.qty { text-align: center; width: 60px; }
 td.description { white-space: normal; word-break: break-word; }
 
 .firma-destinatario-block { text-align: right; position: relative; }
-.firma-destinatario-label {
-  position: relative;
-  top: 8px;
-}
 .firma-destinatario-container {
   width: 220px;
   max-width: 100%;
