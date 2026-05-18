@@ -868,7 +868,7 @@ form.addEventListener('submit', async (event) => {
   setSavingState(true);
 
   try {
-    const current = await getAllDDT();
+    const current = getDDTs();
     const existing = editingIndex === null ? null : current[editingIndex];
 
     const ddt = {
@@ -900,7 +900,7 @@ form.addEventListener('submit', async (event) => {
       current[editingIndex] = ddt;
     }
 
-    await saveAllDDT(current);
+    saveDDTs(current);
     console.log('SALVATAGGIO DDT');
     console.log('CURRENT DDT', current);
     backupToDrive({ skipRemoteSafetyCheck: true, ddt: current });
