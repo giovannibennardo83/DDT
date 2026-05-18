@@ -38,6 +38,10 @@ const cartellaInput = document.getElementById('cartella_clinica');
 const saveButton = document.getElementById('save-ddt-btn');
 const newDDTButton = document.getElementById('new-ddt-btn');
 const saveStatus = document.getElementById('save-status');
+const firmaDestinatarioButton = document.getElementById('firma-destinatario-btn');
+const firmaModal = document.getElementById('firma-modal');
+const closeFirmaModalButton = document.getElementById('close-firma-modal');
+const firmaCanvas = document.getElementById('firma-canvas');
 
 let editingIndex = null;
 let syncInProgress = false;
@@ -77,6 +81,27 @@ function showSaveToast(message, type = 'success') {
     saveStatus.classList.remove('is-success', 'is-error');
     saveStatusTimeout = null;
   }, 3000);
+}
+
+
+
+function resizeFirmaCanvas() {
+  if (!firmaCanvas) return;
+  const ratio = window.devicePixelRatio || 1;
+  const rect = firmaCanvas.getBoundingClientRect();
+  firmaCanvas.width = Math.max(1, Math.round(rect.width * ratio));
+  firmaCanvas.height = Math.max(1, Math.round(rect.height * ratio));
+}
+
+function openFirmaModal() {
+  if (!firmaModal) return;
+  firmaModal.hidden = false;
+  resizeFirmaCanvas();
+}
+
+function closeFirmaModal() {
+  if (!firmaModal) return;
+  firmaModal.hidden = true;
 }
 
 function createEmptyRiga() {
@@ -774,6 +799,23 @@ if (ocrScaricoInputGallery) ocrScaricoInputGallery.addEventListener('change', ha
 
 [clienteRiga1Input, causaleInput].forEach((input) => {
   input.addEventListener('input', () => clearSimpleFieldError(input));
+});
+
+
+if (firmaDestinatarioButton) firmaDestinatarioButton.addEventListener('click', openFirmaModal);
+if (closeFirmaModalButton) closeFirmaModalButton.addEventListener('click', closeFirmaModal);
+if (firmaModal) {
+  firmaModal.addEventListener('click', (event) => {
+    if (event.target === firmaModal) {
+      closeFirmaModal();
+    }
+  });
+}
+
+window.addEventListener('resize', () => {
+  if (firmaModal && !firmaModal.hidden) {
+    resizeFirmaCanvas();
+  }
 });
 
 if ('serviceWorker' in navigator) {

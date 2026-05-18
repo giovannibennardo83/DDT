@@ -116,6 +116,7 @@
           <button type="submit" id="save-ddt-btn">Salva DDT</button>
           <button id="new-ddt-btn" type="button">Nuovo DDT</button>
           <button type="button" id="cancel-edit" class="secondary" hidden>Annulla modifica</button>
+          <button type="button" id="firma-destinatario-btn" class="secondary">Firma destinatario</button>
           <button type="button" id="print-last" class="secondary">Stampa ultimo</button>
         </div>
       </form>
@@ -125,6 +126,18 @@
         <ul id="ddt-list"></ul>
       </section>
     </main>
+
+
+
+    <div id="firma-modal" class="modal-overlay" hidden>
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="firma-modal-title">
+        <h3 id="firma-modal-title">Firma destinatario</h3>
+        <canvas id="firma-canvas" aria-label="Area firma destinatario"></canvas>
+        <div class="modal-actions">
+          <button type="button" id="close-firma-modal" class="secondary">Chiudi</button>
+        </div>
+      </div>
+    </div>
 
     <p id="save-status" class="save-status" aria-live="polite"></p>
     <script src="db.js"></script>
