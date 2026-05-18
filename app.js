@@ -44,6 +44,8 @@ const closeFirmaModalButton = document.getElementById('close-firma-modal');
 const clearFirmaModalButton = document.getElementById('clear-firma-modal');
 const saveFirmaModalButton = document.getElementById('save-firma-modal');
 const firmaCanvas = document.getElementById('firma-canvas');
+const firmaPreviewWrapper = document.getElementById('firma-preview-wrapper');
+const firmaPreview = document.getElementById('firma-preview');
 
 let editingIndex = null;
 let syncInProgress = false;
@@ -52,6 +54,7 @@ let saveStatusTimeout = null;
 let firmaCtx = null;
 let firmaIsDrawing = false;
 let firmaLastPoint = null;
+let temporaryFirmaImage = null;
 
 function setSavingState(saving) {
   isSaving = saving;
@@ -197,7 +200,24 @@ function clearFirmaPlaceholder() {
   clearFirmaCanvas();
 }
 
+
+function updateFirmaPreview() {
+  if (!firmaPreviewWrapper || !firmaPreview) return;
+
+  if (!temporaryFirmaImage) {
+    firmaPreviewWrapper.hidden = true;
+    firmaPreview.removeAttribute('src');
+    return;
+  }
+
+  firmaPreview.src = temporaryFirmaImage;
+  firmaPreviewWrapper.hidden = false;
+}
+
 function saveFirmaPlaceholder() {
+  if (!firmaCanvas) return;
+  temporaryFirmaImage = firmaCanvas.toDataURL('image/png');
+  updateFirmaPreview();
   closeFirmaModal();
   showSaveToast('Firma acquisita', 'success');
 }
@@ -932,6 +952,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+updateFirmaPreview();
 resetFormState();
 
 (async () => {
