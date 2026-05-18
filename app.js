@@ -488,9 +488,25 @@ function mergeDDTLists(localDDT = [], remoteDDT = []) {
     const itemUpdatedAt = new Date(item.updatedAt || 0).getTime() || 0;
     const existingUpdatedAt = new Date(existing.updatedAt || 0).getTime() || 0;
 
-    if (itemUpdatedAt >= existingUpdatedAt) {
-      mergedById.set(key, item);
-    }
+    const mergedItem = itemUpdatedAt >= existingUpdatedAt
+      ? {
+        ...existing,
+        ...item,
+        firma_destinatario:
+          item.firma_destinatario ||
+          existing?.firma_destinatario ||
+          null,
+      }
+      : {
+        ...item,
+        ...existing,
+        firma_destinatario:
+          existing?.firma_destinatario ||
+          item.firma_destinatario ||
+          null,
+      };
+
+    mergedById.set(key, mergedItem);
   };
 
   localDDT.forEach(consider);
