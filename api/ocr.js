@@ -1,5 +1,10 @@
 import OpenAI from "openai";
 
+// Modello vision per l'OCR. "gpt-5" e' il piu' accurato su corsivo e moduli
+// fotografati; in caso di problemi di disponibilita' sull'account, ripiegare
+// su "gpt-4.1" cambiando solo questa costante.
+const OCR_MODEL = "gpt-5";
+
 export default async function handler(req, res) {
 
   // CORS headers
@@ -31,30 +36,60 @@ export default async function handler(req, res) {
 
     const prompt = isDocumentMode
       ? `
-Analizza questo documento di scarico sala operatoria.
+Analizza questo documento di scarico sala operatoria (foto, anche inclinata,
+con parti stampate e parti scritte a mano). Estrai SOLO i campi indicati.
 
-Regole OCR:
-- Estrai intestazione ospedale/struttura come "cliente"
-- Estrai la data ESATTAMENTE come appare nel documento
-- Le date nei documenti italiani sono SEMPRE: DD/MM/YY oppure DD/MM/YYYY
-- NON reinterpretare il formato
-- NON convertire la data
-- Restituisci la stringa originale letta dal documento
-- Estrai iniziali paziente come "iniziali_paziente"
-- Estrai numero cartella clinica (CC o SDO) come "cartella_clinica"
-- Estrai tutte le etichette dispositivi come righe con REF, LOT e description
-- Description: breve (2-4 parole), scegli la parte più importante e leggibile
-- Se presente una misura utile (es. 71mm, 60mm, 10mm), includila nella description
-- Ignora UDI, barcode, GTIN, EDI, indirizzi, materiali e codici lunghi
-- Se stesso REF + LOT compare più volte, NON duplicare: somma le quantità
-- Se lotto manca, usa stringa vuota
-- Gestisci anche foto inclinate
+1. STRUTTURA SANITARIA -> campo "cliente"
+- E' l'intestazione del documento: quasi sempre IN ALTO, nell'angolo destro o
+  sinistro (a volte centrata), anche su piu' righe o dentro un logo.
+- Cerca diciture come: Ospedale, Presidio Ospedaliero, P.O., Azienda
+  Ospedaliera, A.O., A.O.U., ASP, Azienda Sanitaria Provinciale, ASL,
+  Casa di Cura, Clinica, Policlinico, Istituto, Fondazione.
+- Riporta il nome completo della struttura, con l'eventuale citta'.
+- NON confondere la struttura con il produttore dei dispositivi
+  (es. Zimmer Biomet): quello NON e' il cliente.
+- Se davvero assente, usa "".
 
-Rispondi SOLO JSON valido in questo formato:
+2. DATA -> campo "data"
+- E' la data dell'intervento/documento. Formato SEMPRE italiano
+  (giorno/mese/anno): GG/MM/AAAA o GG/MM/AA, separatori possibili / - . ,
+  giorno e mese anche a UNA cifra (es. 5/1/26). Spesso scritta a mano.
+- Etichette tipiche vicino alla data: Data, Data intervento, Data ricovero,
+  del, li.
+- Se nel documento ci sono piu' date, scegli quella dell'intervento o del
+  documento, MAI la data di nascita del paziente.
+- Restituisci la stringa ESATTAMENTE come appare: NON convertirla, NON
+  reinterpretare giorno e mese, NON completare l'anno.
+- Esempi: "21/12/26" -> "21/12/26" | "05-01-2025" -> "05-01-2025" |
+  "5/1/26" -> "5/1/26" | "13.02.26" -> "13.02.26"
+- Se non trovi nessuna data, usa "".
+
+3. PAZIENTE -> campo "iniziali_paziente"
+- Etichette possibili: Paziente, Paz., Pz., Sig., Sig.ra, Nome, Cognome,
+  Iniziali. Spesso scritto a mano.
+- Se trovi il nome per esteso NON riportarlo: restituisci SOLO le iniziali
+  (prima lettera di nome e cognome). Es. "Mario Rossi" -> "M.R."
+- Se trovi gia' delle iniziali (es. "M.R.", "MR"), riportale cosi' come sono.
+- Se assente, usa "".
+
+4. CARTELLA CLINICA -> campo "cartella_clinica"
+- Etichette possibili: Cartella, Cartella clinica, C.C., CC, N. cartella,
+  SDO, Nosologico. E' un numero, a volte con l'anno (es. 1353/26).
+- Se assente, usa "".
+
+5. DISPOSITIVI -> campo "righe" (una riga per etichetta dispositivo)
+- Per ogni etichetta: REF (codice articolo), LOT (lotto), description.
+- Description: breve (2-4 parole), la parte piu' importante e leggibile;
+  se presente una misura utile (es. 71mm, 60mm, 10mm), includila.
+- Ignora UDI, barcode, GTIN, EDI, indirizzi, materiali e codici lunghi.
+- Se stesso REF + LOT compare piu' volte, NON duplicare: somma le quantita'.
+- Se il lotto manca, usa stringa vuota.
+
+Rispondi SOLO con JSON valido in questo formato:
 {
   "cliente": "nome struttura",
-  "data": "DD/MM/YY o DD/MM/YYYY (raw)",
-  "iniziali_paziente": "XX",
+  "data": "GG/MM/AA o GG/MM/AAAA cosi' come appare",
+  "iniziali_paziente": "M.R.",
   "cartella_clinica": "12345",
   "righe": [
     {
@@ -65,10 +100,6 @@ Rispondi SOLO JSON valido in questo formato:
     }
   ]
 }
-
-Esempi data:
-21/12/26 -> "21/12/26"
-05/01/2025 -> "05/01/2025"
 `
       : `
 Analizza questa etichetta di protesi ortopedica tramite OCR.
@@ -129,8 +160,8 @@ Rispondi SOLO JSON valido:
 }
 `;
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
+    const richiesta = {
+      model: OCR_MODEL,
       input: [
         {
           role: "user",
@@ -143,7 +174,15 @@ Rispondi SOLO JSON valido:
           ]
         }
       ]
-    });
+    };
+
+    // I modelli gpt-5 ragionano prima di rispondere: per l'OCR basta lo
+    // sforzo minimo, che tiene bassa la latenza sul campo.
+    if (OCR_MODEL.startsWith("gpt-5")) {
+      richiesta.reasoning = { effort: "low" };
+    }
+
+    const response = await openai.responses.create(richiesta);
 
     const outputText = response.output_text;
 
@@ -161,29 +200,50 @@ try {
   throw new Error("Invalid JSON from OCR");
 }
 
+// Tollerante sui formati reali: giorno/mese anche a una cifra, separatori
+// / - . con eventuali spazi, testo attorno alla data. Rifiuta valori fuori
+// range invece di produrre date impossibili.
 const normalizeItalianDate = (value) => {
   const raw = String(value || "").trim();
-  const match = raw.match(/^(\d{2})[\/\-.](\d{2})[\/\-.](\d{2}|\d{4})$/);
+  const match = raw.match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4}|\d{2})/);
   if (!match) return "";
 
-  const day = match[1];
-  const month = match[2];
+  const day = Number(match[1]);
+  const month = Number(match[2]);
   let year = match[3];
+
+  if (day < 1 || day > 31 || month < 1 || month > 12) return "";
 
   if (year.length === 2) {
     const yy = Number(year);
     year = yy <= 69 ? `20${year}` : `19${year}`;
   }
 
-  return `${year}-${month}-${day}`;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+};
+
+// Rete di sicurezza privacy: se il modello riporta un nome per esteso
+// nonostante le istruzioni, lo riduce comunque a iniziali.
+const normalizeIniziali = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const parole = raw.split(/\s+/).filter((p) => /[A-Za-zÀ-ÿ]/.test(p));
+  const sembraNomeEsteso = parole.length >= 2 && parole.every((p) => p.replace(/[^A-Za-zÀ-ÿ]/g, "").length >= 2);
+
+  if (sembraNomeEsteso) {
+    return parole.map((p) => p.replace(/[^A-Za-zÀ-ÿ]/g, "")[0].toUpperCase() + ".").join("");
+  }
+
+  return raw.toUpperCase();
 };
 
 if (isDocumentMode) {
   parsed.data = normalizeItalianDate(parsed.data);
 
   // Sicurezza campi
-  parsed.cliente = parsed.cliente || "";
-  parsed.iniziali_paziente = parsed.iniziali_paziente || "";
+  parsed.cliente = String(parsed.cliente || "").trim();
+  parsed.iniziali_paziente = normalizeIniziali(parsed.iniziali_paziente);
   parsed.cartella_clinica = parsed.cartella_clinica || "";
   parsed.righe = Array.isArray(parsed.righe) ? parsed.righe : [];
 
