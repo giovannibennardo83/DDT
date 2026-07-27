@@ -36,8 +36,19 @@ export default async function handler(req, res) {
 
     const prompt = isDocumentMode
       ? `
-Analizza questo documento di scarico sala operatoria (foto, anche inclinata,
-con parti stampate e parti scritte a mano). Estrai SOLO i campi indicati.
+Analizza questo documento di scarico sala operatoria (foto, con parti
+stampate e parti scritte a mano). Estrai SOLO i campi indicati.
+
+ORIENTAMENTO — leggi con attenzione:
+- La foto puo' essere RUOTATA di 90, 180 o 270 gradi: se il testo appare
+  in verticale o capovolto, ruota mentalmente l'immagine e leggila comunque.
+- I bollini dei dispositivi sono etichette adesive incollate sul foglio in
+  orientamenti DIVERSI tra loro (dritti, ruotati di 90 gradi, storti):
+  esamina OGNI bollino nel SUO orientamento, uno per uno. Non fermarti ai
+  primi: contali e leggili tutti.
+- NON dichiarare il documento illeggibile se una parte si legge: restituisci
+  sempre tutti i campi che riesci a estrarre, e "" solo per quelli davvero
+  illeggibili.
 
 1. STRUTTURA SANITARIA -> campo "cliente"
 - E' l'intestazione del documento: quasi sempre IN ALTO, nell'angolo destro o
@@ -103,6 +114,10 @@ Rispondi SOLO con JSON valido in questo formato:
 `
       : `
 Analizza questa etichetta di protesi ortopedica tramite OCR.
+
+ORIENTAMENTO: la foto puo' essere ruotata di 90, 180 o 270 gradi o storta.
+Se il testo appare in verticale o capovolto, ruota mentalmente l'immagine
+e leggila comunque: non rispondere con campi vuoti solo per la rotazione.
 
 Obiettivo: estrarre SOLO questi campi:
 - REF (codice articolo)
